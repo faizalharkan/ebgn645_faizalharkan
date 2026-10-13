@@ -1,0 +1,32 @@
+B 3 C o m p i l a t i o n
+B 103 E x e c u t i o n
+I 105 a
+I 106 b
+I 107 c
+I 108 d
+B 112 Equation Listing    SOLVE direct_selling Using QCP From line 71
+D 115 social_surplus_max
+B 121 Column Listing      SOLVE direct_selling Using QCP From line 71
+E 124 X
+E 131 social_surplus
+B 139 Range Statistics    SOLVE direct_selling Using QCP From line 71
+B 150 Model Statistics    SOLVE direct_selling Using QCP From line 71
+B 164 Solution Report     SOLVE direct_selling Using QCP From line 71
+F 211 social_surplus_max
+G 215 X
+G 216 social_surplus
+B 228 E x e c u t i o n
+I 228 rep
+B 239 Equation Listing    SOLVE centralized_desk Using QCP From line 84
+D 242 profit_max
+B 248 Column Listing      SOLVE centralized_desk Using QCP From line 84
+E 251 X
+E 258 profit
+B 266 Range Statistics    SOLVE centralized_desk Using QCP From line 84
+B 277 Model Statistics    SOLVE centralized_desk Using QCP From line 84
+B 291 Solution Report     SOLVE centralized_desk Using QCP From line 84
+F 338 profit_max
+G 342 X
+G 343 profit
+B 355 E x e c u t i o n
+I 355 rep

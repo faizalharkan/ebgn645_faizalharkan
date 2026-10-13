@@ -1,0 +1,22 @@
+// Milestone 2 - Direct selling versus "DSI" an Indonesian Centralized export desk on Ferronickel
+// Assumption: 1 commodity, 1 period, and unit are still illustrative 
+// X = exports; where price is monetary units per quantity unit
+
+// 1. Input Values and Elasticities 
+
+scalar pbar /100/
+scalar xbar / 100/
+scalar e_r /-2/
+scalar e_s /1/; 
+
+// 2. Determine inverse residual demand and marginal cost 
+/ Price = a + b*X 
+/ MC = c + d*X
+
+scalar a, b, c, d;
+b = pbar / (e_r * xbar);
+a = pbar - b * xbar; 
+d = pbar / (e_s * xbar);
+c = pbar - d * xbar;
+
+display a, b, c, d;

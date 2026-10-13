@@ -1,0 +1,378 @@
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 10/13/26 10:47:33 Page 1
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+   1  ** Milestone 2 - Direct selling versus "DSI" an Indonesian Centralized export desk on Ferronickel
+   2  ** Assumption: 1 commodity, 1 period, and unit are still illustrative
+   3  ** X = exports; where price is monetary units per quantity unit
+   4   
+   5   
+   6  * ----------------------------------------
+   7  ** 1. Input Values and Elasticities
+   8  * ----------------------------------------
+   9   
+  10  scalar
+  11      pbar "export price [money/unit]" /100/
+  12      xbar "export quantity [unit]" /100/
+  13      e_r  "residual demand elasticity [unitless]" /-2/
+  14      e_s  "supply elasticity [unitless]" /1/;
+  15   
+  16   
+  17  * ----------------------------------------
+  18  ** 2. Determine inverse residual demand and marginal cost
+  19  * ----------------------------------------
+  20  * Price = a + b*X
+  21  * MC = c + d*X
+  22   
+  23  scalar a, b, c, d;
+  24  b = pbar / (e_r * xbar);
+  25  a = pbar - b * xbar;
+  26  d = pbar / (e_s * xbar);
+  27  c = pbar - d * xbar;
+  28   
+  29  display a, b, c, d;
+  30   
+  31   
+  32  * ----------------------------------------
+  33  ** 3. Variables and objective equations
+  34  * ----------------------------------------
+  35   
+  36  positive variable X "Indonesian exports" ;
+  37   
+  38  variable
+  39      social_surplus "surplus objective for competitive equilibrium"
+  40      profit "joint Indonesian producer/export surplus" ;
+  41   
+  42  equation social_surplus_max, profit_max;
+  43  * Direct-selling benchmark:
+  44  * producers/exporters act as price takers.
+  45  * The objective is area under residual demand minus total resource cost.
+  46  * Maximizing this objective gives P = MC when X > 0.
+  47  * It is used as a computational device to recover the competitive equilibrium.
+  48  * Its objective value is not interpreted as Indonesian or global welfare.
+  49   
+  50  social_surplus_max.. social_surplus =e= a*X + b*X*X/2 - c*X - d*X*X/2 ;
+  51   
+  52  * Centralized export desk:
+  53  * the centralized desk acts as a price maker.
+  54  * It maximizes export revenue minus total resource cost.
+  55  * Maximizing this objective gives MR = MC when X > 0.
+  56  * Profit represents joint producer/export surplus, not DSI corporate profit.
+  57   
+  58  profit_max.. profit =e= (a+b*X)*X - c*X - d*X*X/2 ;
+  59   
+  60  * where each model contrains only its own objective function, and the other is flexible to adjust.
+  61   
+  62  model direct_selling /social_surplus_max/ ;
+  63  model centralized_desk /profit_max/ ;
+  64   
+  65  parameter rep "comparable results for both regimes" ;
+  66   
+  67  * ----------------------------------------
+  68  ** 4. Simulate the direct-selling regime, where the Indonesian producers/exporters are price takers and maximize social surplus.
+  69  * ----------------------------------------
+  70   
+  71  solve direct_selling using qcp maximizing social_surplus;
+  72  rep("direct_selling","exports") = X.l ;
+  73  rep("direct_selling","price") = a + b*X.l ;
+  74  rep("direct_selling","revenue") = (a + b*X.l) * X.l ;
+  75  rep("direct_selling","cost") = c*X.l + d*X.l*X.l/2;
+  76  rep("direct_selling","producer_surplus") = rep("direct_selling","revenue") - rep("direct_selling","cost") ;
+  77   
+  78  display rep;
+  79   
+  80  * ----------------------------------------
+  81  ** 5. Simulate the centralized desk regime, where the Indonesian producers/exporters are price setters and maximize joint profit.
+  82  * ----------------------------------------
+  83   
+  84  solve centralized_desk using qcp maximizing profit;
+  85  rep("centralized_desk","exports") = X.l ;
+  86  rep("centralized_desk","price") = a + b*X.l ;
+  87  rep("centralized_desk","revenue") = (a + b*X.l) * X.l ;
+  88  rep("centralized_desk","cost") = c*X.l + d*X.l*X.l/2;
+  89  rep("centralized_desk","producer_surplus") = rep("centralized_desk","revenue") - rep("centralized_desk","cost") ;
+  90   
+  91  display rep;
+  92   
+
+
+COMPILATION TIME     =        0.000 SECONDS      3 MB  54.3.1 61154be4 DAX-DAC
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 10/13/26 10:47:33 Page 2
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----     29 PARAMETER a                    =      150.000  
+            PARAMETER b                    =       -0.500  
+            PARAMETER c                    =        0.000  
+            PARAMETER d                    =        1.000  
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 10/13/26 10:47:33 Page 3
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE direct_selling Using QCP From line 71
+
+
+---- social_surplus_max  =E=  
+
+social_surplus_max..  - (150)*X + social_surplus =E= 0 ; (LHS = 0)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 10/13/26 10:47:33 Page 4
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE direct_selling Using QCP From line 71
+
+
+---- X  Indonesian exports
+
+X
+                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
+    (-150)      social_surplus_max
+
+
+---- social_surplus  surplus objective for competitive equilibrium
+
+social_surplus
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+        1       social_surplus_max
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 10/13/26 10:47:33 Page 5
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE direct_selling Using QCP From line 71
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 1.500E+02]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 10/13/26 10:47:33 Page 6
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE direct_selling Using QCP From line 71
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  14     CONSTANT POOL              18
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 10/13/26 10:47:33 Page 7
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE direct_selling Using QCP From line 71
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   direct_selling      OBJECTIVE  social_surplus
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  71
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE             7500.0000
+
+ RESOURCE USAGE, LIMIT          0.005 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU social_su~          .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .           100.0000        +INF            EPS         
+---- VAR social_su~        -INF         7500.0000        +INF             .          
+
+  X  Indonesian exports
+  social_surplus  surplus objective for competitive equilibrium
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 10/13/26 10:47:33 Page 8
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----     78 PARAMETER rep  comparable results for both regimes
+
+                   exports       price     revenue        cost  producer_~
+
+direct_selling     100.000     100.000   10000.000    5000.000    5000.000
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 10/13/26 10:47:33 Page 9
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE centralized_desk Using QCP From line 84
+
+
+---- profit_max  =E=  
+
+profit_max..  (50)*X + profit =E= 0 ; (LHS = -5000, INFES = 5000 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 10/13/26 10:47:33 Page 10
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE centralized_desk Using QCP From line 84
+
+
+---- X  Indonesian exports
+
+X
+                (.LO, .L, .UP, .M = 0, 100, +INF, EPS)
+      (50)      profit_max
+
+
+---- profit  joint Indonesian producer/export surplus
+
+profit
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+        1       profit_max
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 10/13/26 10:47:33 Page 11
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE centralized_desk Using QCP From line 84
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 5.000E+01]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 10/13/26 10:47:33 Page 12
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE centralized_desk Using QCP From line 84
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  12     CONSTANT POOL              18
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 10/13/26 10:47:33 Page 13
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE centralized_desk Using QCP From line 84
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   centralized_desk    OBJECTIVE  profit
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  84
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE             5625.0000
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU profit_max          .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            75.0000        +INF            EPS         
+---- VAR profit            -INF         5625.0000        +INF             .          
+
+  X  Indonesian exports
+  profit  joint Indonesian producer/export surplus
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 10/13/26 10:47:33 Page 14
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----     91 PARAMETER rep  comparable results for both regimes
+
+                     exports       price     revenue        cost  producer_~
+
+direct_selling       100.000     100.000   10000.000    5000.000    5000.000
+centralized_desk      75.000     112.500    8437.500    2812.500    5625.000
+
+
+
+EXECUTION TIME       =        0.042 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+
+
+USER: Course License                                 G260809+0003Ac-GEN
+      Colorado School of Mines                                  DCE5587
+      License for teaching and research at degree granting institutions
+
+
+**** FILE SUMMARY
+
+Input      /Users/alharkan/Documents/GitHub/EBGN645_Fall26/Milestone/Milestone2_v01.gms
+Output     /Users/alharkan/Documents/GitHub/EBGN645_Fall26/Milestone/Milestone2_v01.lst
