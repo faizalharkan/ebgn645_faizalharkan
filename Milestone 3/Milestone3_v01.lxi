@@ -1,0 +1,160 @@
+B 3 C o m p i l a t i o n
+B 289 Include File Summary
+B 301 E x e c u t i o n
+I 303 vbar
+I 304 xbar
+I 305 pbar
+I 306 e_r
+I 307 e_s
+I 309 a
+I 310 b
+I 311 c
+I 312 d
+B 316 Equation Listing    SOLVE direct_selling Using QCP From line 69
+D 319 eq_surplus
+B 325 Column Listing      SOLVE direct_selling Using QCP From line 69
+E 328 X
+E 335 social_surplus
+B 343 Range Statistics    SOLVE direct_selling Using QCP From line 69
+B 354 Model Statistics    SOLVE direct_selling Using QCP From line 69
+B 368 Solution Report     SOLVE direct_selling Using QCP From line 69
+F 414 eq_surplus
+G 418 X
+G 419 social_surplus
+B 431 E x e c u t i o n
+I 433 X
+I 434 price_base
+I 435 exporter_surplus_base
+B 439 Equation Listing    SOLVE with_dsi_fee Using QCP From line 105
+D 442 eq_fee
+B 448 Column Listing      SOLVE with_dsi_fee Using QCP From line 105
+E 451 X
+E 458 social_surplus
+B 466 Range Statistics    SOLVE with_dsi_fee Using QCP From line 105
+B 477 Model Statistics    SOLVE with_dsi_fee Using QCP From line 105
+B 491 Solution Report     SOLVE with_dsi_fee Using QCP From line 105
+F 538 eq_fee
+G 542 X
+G 543 social_surplus
+B 555 E x e c u t i o n
+I 557 X
+I 558 price_fee
+I 559 net_price_fee
+I 560 exporter_surplus_fee
+I 561 dsi_revenue_fee
+I 562 check_eq
+B 566 Equation Listing    SOLVE with_dsi_fee Using QCP From line 156
+D 569 eq_fee
+B 575 Column Listing      SOLVE with_dsi_fee Using QCP From line 156
+E 578 X
+E 585 social_surplus
+B 593 Range Statistics    SOLVE with_dsi_fee Using QCP From line 156
+B 604 Model Statistics    SOLVE with_dsi_fee Using QCP From line 156
+B 623 Solution Report     SOLVE with_dsi_fee Using QCP From line 156
+F 669 eq_fee
+G 673 X
+G 674 social_surplus
+B 686 Equation Listing    SOLVE with_dsi_fee Using QCP From line 156
+D 689 eq_fee
+B 695 Column Listing      SOLVE with_dsi_fee Using QCP From line 156
+E 698 X
+E 705 social_surplus
+B 713 Range Statistics    SOLVE with_dsi_fee Using QCP From line 156
+B 724 Model Statistics    SOLVE with_dsi_fee Using QCP From line 156
+B 743 Solution Report     SOLVE with_dsi_fee Using QCP From line 156
+F 790 eq_fee
+G 794 X
+G 795 social_surplus
+B 807 Equation Listing    SOLVE with_dsi_fee Using QCP From line 156
+D 810 eq_fee
+B 816 Column Listing      SOLVE with_dsi_fee Using QCP From line 156
+E 819 X
+E 826 social_surplus
+B 834 Range Statistics    SOLVE with_dsi_fee Using QCP From line 156
+B 845 Model Statistics    SOLVE with_dsi_fee Using QCP From line 156
+B 864 Solution Report     SOLVE with_dsi_fee Using QCP From line 156
+F 911 eq_fee
+G 915 X
+G 916 social_surplus
+B 928 Equation Listing    SOLVE with_dsi_fee Using QCP From line 156
+D 931 eq_fee
+B 937 Column Listing      SOLVE with_dsi_fee Using QCP From line 156
+E 940 X
+E 947 social_surplus
+B 955 Range Statistics    SOLVE with_dsi_fee Using QCP From line 156
+B 966 Model Statistics    SOLVE with_dsi_fee Using QCP From line 156
+B 985 Solution Report     SOLVE with_dsi_fee Using QCP From line 156
+F 1032 eq_fee
+G 1036 X
+G 1037 social_surplus
+B 1049 Equation Listing    SOLVE with_dsi_fee Using QCP From line 156
+D 1052 eq_fee
+B 1058 Column Listing      SOLVE with_dsi_fee Using QCP From line 156
+E 1061 X
+E 1068 social_surplus
+B 1076 Range Statistics    SOLVE with_dsi_fee Using QCP From line 156
+B 1087 Model Statistics    SOLVE with_dsi_fee Using QCP From line 156
+B 1106 Solution Report     SOLVE with_dsi_fee Using QCP From line 156
+F 1153 eq_fee
+G 1157 X
+G 1158 social_surplus
+B 1170 Equation Listing    SOLVE with_dsi_fee Using QCP From line 156
+D 1173 eq_fee
+B 1179 Column Listing      SOLVE with_dsi_fee Using QCP From line 156
+E 1182 X
+E 1189 social_surplus
+B 1197 Range Statistics    SOLVE with_dsi_fee Using QCP From line 156
+B 1208 Model Statistics    SOLVE with_dsi_fee Using QCP From line 156
+B 1227 Solution Report     SOLVE with_dsi_fee Using QCP From line 156
+F 1274 eq_fee
+G 1278 X
+G 1279 social_surplus
+B 1291 Equation Listing    SOLVE with_dsi_fee Using QCP From line 156
+D 1294 eq_fee
+B 1300 Column Listing      SOLVE with_dsi_fee Using QCP From line 156
+E 1303 X
+E 1310 social_surplus
+B 1318 Range Statistics    SOLVE with_dsi_fee Using QCP From line 156
+B 1329 Model Statistics    SOLVE with_dsi_fee Using QCP From line 156
+B 1348 Solution Report     SOLVE with_dsi_fee Using QCP From line 156
+F 1395 eq_fee
+G 1399 X
+G 1400 social_surplus
+B 1412 E x e c u t i o n
+I 1412 fee_results
+B 1429 Equation Listing    SOLVE with_dsi_fee Using QCP From line 215
+D 1432 eq_fee
+B 1438 Column Listing      SOLVE with_dsi_fee Using QCP From line 215
+E 1441 X
+E 1448 social_surplus
+B 1456 Range Statistics    SOLVE with_dsi_fee Using QCP From line 215
+B 1467 Model Statistics    SOLVE with_dsi_fee Using QCP From line 215
+B 1486 Solution Report     SOLVE with_dsi_fee Using QCP From line 215
+F 1533 eq_fee
+G 1537 X
+G 1538 social_surplus
+B 1550 Equation Listing    SOLVE with_dsi_fee Using QCP From line 215
+D 1553 eq_fee
+B 1559 Column Listing      SOLVE with_dsi_fee Using QCP From line 215
+E 1562 X
+E 1569 social_surplus
+B 1577 Range Statistics    SOLVE with_dsi_fee Using QCP From line 215
+B 1588 Model Statistics    SOLVE with_dsi_fee Using QCP From line 215
+B 1607 Solution Report     SOLVE with_dsi_fee Using QCP From line 215
+F 1654 eq_fee
+G 1658 X
+G 1659 social_surplus
+B 1671 Equation Listing    SOLVE with_dsi_fee Using QCP From line 215
+D 1674 eq_fee
+B 1680 Column Listing      SOLVE with_dsi_fee Using QCP From line 215
+E 1683 X
+E 1690 social_surplus
+B 1698 Range Statistics    SOLVE with_dsi_fee Using QCP From line 215
+B 1709 Model Statistics    SOLVE with_dsi_fee Using QCP From line 215
+B 1728 Solution Report     SOLVE with_dsi_fee Using QCP From line 215
+F 1775 eq_fee
+G 1779 X
+G 1780 social_surplus
+B 1792 E x e c u t i o n
+I 1792 elastic_results
+I 1802 margin_results

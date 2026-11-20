@@ -1,0 +1,4326 @@
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 1
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+   1   
+   2  ** Milestone 3 - DSI export fee on Indonesian Ferronickel
+   3  ** Assumption: 1 commodity, 1 period, competitive exporters
+   4  ** Using 2025 export data; elasticities and fees are assumed
+   5  ** X = exports (million tons); P = USD per ton of product
+   6  ** Revenue, cost, and profit are in million USD
+   7  ** version 2
+   8   
+   9  * ----------------------------------------
+  10  ** 1. Input Values and Elasticities
+  11  * ----------------------------------------
+  12   
+  13  scalar
+  14      vbar "2025 export value [million USD]" /16385.06673/
+  15      xbar "2025 export quantity [million tons]" /11.5556/
+  16      pbar "average export price [USD/ton]"
+  17      e_r  "residual demand elasticity [unitless]" /-2/
+  18      e_s  "supply elasticity [unitless]" /1/;
+  19   
+  20  * Average price from 2025 export data
+  21  pbar = vbar / xbar;
+  22   
+  23  display vbar, xbar, pbar, e_r, e_s;
+  24   
+  25   
+  26  * ----------------------------------------
+  27  ** 2A. Determine Inverse Residual Demand and Marginal Cost
+  28  * ----------------------------------------
+  29   
+  30  * P(X) = a + bX
+  31  * MC(X) = c + dX
+  32   
+  33  scalar
+  34      a "demand intercept"
+  35      b "demand slope"
+  36      c "marginal cost intercept"
+  37      d "marginal cost slope";
+  38   
+  39  * Calibrate using price, quantity, and elasticities
+  40  b = pbar / (e_r* xbar);
+  41  a = pbar - b * xbar;
+  42   
+  43  d = pbar / (e_s * xbar);
+  44  c = pbar - d * xbar;
+  45   
+  46  display a, b, c, d;
+  47   
+  48   
+  49   
+  50  * ----------------------------------------
+  51  ** 2B. Two Producer Types - Cost Calibration
+  52  * ----------------------------------------
+  53   
+  54  * Two representative NPI producer types, adopted from S&P Capital IQ Pro for Indonesian Nickel Producers identified producing FeNi/NPI (HS: 720260) in 2025
+  55  * Cash costs are illustrative estimates based on 2025 producer data and callibrated based on reported grade Ni in FeNi/NPI production
+  56  * All quantities are in million tons of product
+  57   
+  58  set i "producer types"
+  59      /low, high/;
+  60   
+  61  parameter
+  62      share(i)      "assumed baseline export share"
+  63      ac_target(i)  "average cash cost [USD/ton product]"
+  64      qbar(i)       "baseline exports by producer [million tons]"
+  65      c_type(i)     "marginal cost intercept"
+  66      d_type(i)     "marginal cost slope"
+  67      mc_check(i)   "marginal cost at baseline"
+  68      ac_check(i)   "average cost at baseline";
+  69   
+  70  * Initial assumptions
+  71  share("low")  = 0.50;
+  72  share("high") = 0.50;
+  73   
+  74  ac_target("low")  = 1150;
+  75  ac_target("high") = 1330;
+  76   
+  77  * Allocate baseline exports
+  78  qbar(i) = xbar * share(i);
+  79   
+  80  * Calibrate linear marginal cost for each producer
+  81  * MC_i = c_i + d_i * q_i
+  82  * AC_i = c_i + 0.5 * d_i * q_i
+  83   
+  84  d_type(i) = 2 * (pbar - ac_target(i)) / qbar(i);
+  85  c_type(i) = pbar - d_type(i) * qbar(i);
+  86   
+  87  * Check calibration at baseline
+  88  mc_check(i) = c_type(i) + d_type(i) * qbar(i);
+  89  ac_check(i) = c_type(i) + 0.5 * d_type(i) * qbar(i);
+  90   
+  91  display share, ac_target, qbar,
+  92          c_type, d_type, mc_check, ac_check;
+  93   
+  94   
+  95   
+  96  * ----------------------------------------
+  97  ** 3. Direct Selling - No Fee
+  98  * ----------------------------------------
+  99   
+ 100  * Competitive market, where P = MC
+ 101   
+ 102  positive variable X "export quantity";
+ 103  variable social_surplus "total market surplus";
+ 104   
+ 105  equation eq_surplus;
+ 106   
+ 107  eq_surplus..
+ 108      social_surplus =e=
+ 109        a*X + 0.5*b*sqr(X)
+ 110      - c*X - 0.5*d*sqr(X);
+ 111   
+ 112  model direct_selling /eq_surplus/;
+ 113   
+ 114  X.l = xbar;
+ 115   
+ 116  solve direct_selling using qcp maximizing social_surplus;
+ 117   
+ 118  * Calculate price and exporter surplus
+ 119  scalar
+ 120      price_base
+ 121      exporter_surplus_base;
+ 122   
+ 123  price_base = a + b*X.l;
+ 124  exporter_surplus_base = price_base*X.l
+ 125                       - (c*X.l + 0.5*d*sqr(X.l));
+ 126   
+ 127  display X.l, price_base, exporter_surplus_base;
+ 128   
+ 129   
+ 130   
+ 131  * ----------------------------------------
+ 132  ** 4. Direct Selling - With DSI Fee
+ 133  * ----------------------------------------
+ 134   
+ 135  * Exporters pay the fee to DSI for export monitoring and verification
+ 136  * DSI revenue is not the same as DSI profit
+ 137   
+ 138  scalar fee "DSI fee [USD/ton]" /5/;
+ 139   
+ 140  equation eq_fee;
+ 141   
+ 142  eq_fee..
+ 143      social_surplus =e=
+ 144        a*X + 0.5*b*sqr(X)
+ 145      - c*X - 0.5*d*sqr(X)
+ 146      - fee*X;
+ 147   
+ 148  model with_dsi_fee /eq_fee/;
+ 149   
+ 150  X.l = xbar;
+ 151   
+ 152  solve with_dsi_fee using qcp maximizing social_surplus;
+ 153   
+ 154  * Calculate price, exporter surplus, and DSI revenue
+ 155  scalar
+ 156      price_fee
+ 157      net_price_fee
+ 158      exporter_surplus_fee
+ 159      dsi_revenue_fee
+ 160      check_eq;
+ 161   
+ 162  price_fee = a + b*X.l;
+ 163  net_price_fee = price_fee - fee;
+ 164   
+ 165  exporter_surplus_fee = net_price_fee*X.l
+ 166                       - (c*X.l + 0.5*d*sqr(X.l));
+ 167   
+ 168  dsi_revenue_fee = fee*X.l;
+ 169   
+ 170  * Check if P - fee = MC
+ 171  check_eq = net_price_fee - (c + d*X.l);
+ 172   
+ 173  display X.l, price_fee, net_price_fee,
+ 174          exporter_surplus_fee, dsi_revenue_fee, check_eq;
+ 175   
+ 176   
+ 177   
+ 178  * ----------------------------------------
+ 179  ** 5. Fee Sensitivity Analysis
+ 180  * ----------------------------------------
+ 181   
+ 182  * Test different DSI fees using the same demand and supply curves
+ 183   
+ 184  set s "fee scenarios"
+ 185      /f0, f0p5, f1, f3, f5, f7, f9/;
+ 186   
+ 187  parameter fee_value(s) "DSI fee [USD/ton]"
+ 188      /f0   0
+ 189       f0p5 0.5
+ 190       f1   1
+ 191       f3   3
+ 192       f5   5
+ 193       f7   7
+ 194       f9   9/;
+ 195   
+ 196  parameter fee_results(s,*) "results for each fee scenario";
+ 197   
+ 198  loop(s,
+ 199   
+ 200      fee = fee_value(s);
+ 201      X.l = xbar;
+ 202   
+ 203      solve with_dsi_fee using qcp maximizing social_surplus;
+ 204   
+ 205      price_fee = a + b*X.l;
+ 206      net_price_fee = price_fee - fee;
+ 207   
+ 208      exporter_surplus_fee = net_price_fee*X.l
+ 209                           - (c*X.l + 0.5*d*sqr(X.l));
+ 210   
+ 211      dsi_revenue_fee = fee*X.l;
+ 212   
+ 213      fee_results(s,"fee") = fee;
+ 214      fee_results(s,"exports_Mt") = X.l;
+ 215      fee_results(s,"price_USD_t") = price_fee;
+ 216      fee_results(s,"net_price_USD_t") = net_price_fee;
+ 217      fee_results(s,"exporter_surplus_USDm") = exporter_surplus_fee;
+ 218      fee_results(s,"dsi_revenue_USDm") = dsi_revenue_fee;
+ 219   
+ 220  *Changes relative to the no-fee baseline
+ 221      fee_results(s,"export_change_pct") = 100*(X.l/xbar - 1);
+ 222      fee_results(s,"buyer_price_change") = price_fee - price_base;
+ 223      fee_results(s,"exporter_net_price_change") =
+ 224          net_price_fee - price_base;
+ 225   
+ 226  );
+ 227   
+ 228  display fee_results;
+ 229   
+ 230   
+ 231   
+ 232   
+ 233  * ----------------------------------------
+ 234  ** 6. Demand Elasticity Sensitivity Analysis
+ 235  * ----------------------------------------
+ 236   
+ 237  * Keep DSI fee at USD 5/ton
+ 238  * Test different foreign demand elasticities
+ 239   
+ 240  fee = 5;
+ 241   
+ 242  set t "elasticity scenarios"
+ 243      /e1, e2, e4/;
+ 244   
+ 245  parameter elastic_value(t) "residual demand elasticity"
+ 246      /e1 -1
+ 247       e2 -2
+ 248       e4 -4/;
+ 249   
+ 250  parameter elastic_results(t,*) "elasticity sensitivity results";
+ 251   
+ 252  loop(t,
+ 253   
+ 254      e_r = elastic_value(t);
+ 255   
+ 256  *Recalibrate demand for each elasticity
+ 257      b = pbar / (e_r * xbar);
+ 258      a = pbar - b*xbar;
+ 259   
+ 260      X.l = xbar;
+ 261   
+ 262      solve with_dsi_fee using qcp maximizing social_surplus;
+ 263   
+ 264      price_fee = a + b*X.l;
+ 265      net_price_fee = price_fee - fee;
+ 266   
+ 267      exporter_surplus_fee = net_price_fee*X.l
+ 268                           - (c*X.l + 0.5*d*sqr(X.l));
+ 269   
+ 270      dsi_revenue_fee = fee*X.l;
+ 271   
+ 272      elastic_results(t,"elasticity") = e_r;
+ 273      elastic_results(t,"exports_Mt") = X.l;
+ 274      elastic_results(t,"buyer_price_USD_t") = price_fee;
+ 275      elastic_results(t,"net_exporter_USD_t") = net_price_fee;
+ 276      elastic_results(t,"exporter_surplus_USDm") = exporter_surplus_fee;
+ 277      elastic_results(t,"dsi_revenue_USDm") = dsi_revenue_fee;
+ 278      elastic_results(t,"export_change_pct") = 100*(X.l/xbar - 1);
+ 279      elastic_results(t,"buyer_price_change") = price_fee - pbar;
+ 280   
+ 281  );
+ 282   
+ 283  display elastic_results;
+ 284   
+ 285  * Restore the main elasticity assumption
+ 286  e_r = -2;
+ 287  b = pbar / (e_r * xbar);
+ 288  a = pbar - b*xbar;
+ 289   
+ 290   
+ 291   
+ 292  * ----------------------------------------
+ 293  ** 7. DSI Operating Margin Sensitivity
+ 294  * ----------------------------------------
+ 295   
+ 296  * Assume DSI operating margins of 25%, 50%, and 75%
+ 297  * Use the DSI revenue from the USD 5/ton fee scenario
+ 298   
+ 299  set m "DSI margin scenarios"
+ 300      /m25, m50, m75/;
+ 301   
+ 302  parameter margin_value(m) "DSI operating margin"
+ 303      /m25 0.25
+ 304       m50 0.50
+ 305       m75 0.75/;
+ 306   
+ 307  parameter margin_results(m,*) "DSI operating cost and profit";
+ 308   
+ 309  scalar revenue_f5 "DSI revenue at USD 5/ton";
+ 310   
+ 311  revenue_f5 = fee_results("f5","dsi_revenue_USDm");
+ 312   
+ 313  loop(m,
+ 314   
+ 315      margin_results(m,"margin_pct") = 100*margin_value(m);
+ 316      margin_results(m,"revenue_USDm") = revenue_f5;
+ 317      margin_results(m,"operating_cost_USDm") =
+ 318          revenue_f5*(1 - margin_value(m));
+ 319      margin_results(m,"operating_profit_USDm") =
+ 320          revenue_f5*margin_value(m);
+ 321   
+ 322  );
+ 323   
+ 324  display margin_results;
+ 325   
+ 326   
+ 327   
+ 328  * ----------------------------------------
+ 329  ** 8. Two Producer Types - Baseline Equilibrium
+ 330  * ----------------------------------------
+ 331   
+ 332  * Both producers face the same export market price
+ 333  * Each producer has a different marginal cost function
+ 334  * No DSI fee in this first test
+ 335   
+ 336  positive variable Q2(i) "exports by producer type [million tons]";
+ 337  variable obj_two "competitive equilibrium potential";
+ 338   
+ 339  equation eq_obj_two;
+ 340   
+ 341  eq_obj_two..
+ 342      obj_two =e=
+ 343        a*sum(i,Q2(i))
+ 344      + 0.5*b*sqr(sum(i,Q2(i)))
+ 345      - sum(i, c_type(i)*Q2(i)
+ 346             + 0.5*d_type(i)*sqr(Q2(i)));
+ 347   
+ 348  model two_type_base /eq_obj_two/;
+ 349   
+ 350  * Initialize exports at calibrated baseline
+ 351  Q2.l(i) = qbar(i);
+ 352   
+ 353  solve two_type_base using qcp maximizing obj_two;
+ 354   
+ 355  * Calculate equilibrium outcomes
+ 356  scalar
+ 357      exports_two
+ 358      price_two
+ 359      quantity_gap_two
+ 360      price_gap_two;
+ 361   
+ 362  parameter
+ 363      mc_two(i) "marginal cost by type"
+ 364      eq_gap_two(i) "price minus marginal cost";
+ 365   
+ 366  exports_two = sum(i,Q2.l(i));
+ 367  price_two   = a + b*exports_two;
+ 368   
+ 369  mc_two(i) = c_type(i) + d_type(i)*Q2.l(i);
+ 370  eq_gap_two(i) = price_two - mc_two(i);
+ 371   
+ 372  * Check against observed WITS benchmark
+ 373  quantity_gap_two = exports_two - xbar;
+ 374  price_gap_two = price_two - pbar;
+ 375   
+ 376  display Q2.l, exports_two, price_two,
+ 377          mc_two, eq_gap_two,
+ 378          quantity_gap_two, price_gap_two;
+ 379   
+ 380   
+ 381   
+ 382  * ----------------------------------------
+ 383  ** 9. Two Producer Types - With DSI Fee
+ 384  * ----------------------------------------
+ 385   
+ 386  * Both producer types pay the same DSI fee
+ 387  * Fee is USD per ton of exported NPI
+ 388   
+ 389  fee = 5;
+ 390   
+ 391  equation eq_obj_two_fee;
+ 392   
+ 393  eq_obj_two_fee..
+ 394      obj_two =e=
+ 395        a*sum(i,Q2(i))
+ 396      + 0.5*b*sqr(sum(i,Q2(i)))
+ 397      - sum(i, c_type(i)*Q2(i)
+ 398             + 0.5*d_type(i)*sqr(Q2(i)))
+ 399      - fee*sum(i,Q2(i));
+ 400   
+ 401  model two_type_fee /eq_obj_two_fee/;
+ 402   
+ 403  * Start from the calibrated baseline
+ 404  Q2.l(i) = qbar(i);
+ 405   
+ 406  solve two_type_fee using qcp maximizing obj_two;
+ 407   
+ 408  * Calculate market outcomes
+ 409  scalar
+ 410      exports_two_fee
+ 411      price_two_fee
+ 412      net_price_two_fee
+ 413      dsi_revenue_two_fee;
+ 414   
+ 415  parameter
+ 416      q_fee_two(i)             "exports by producer [Mt]"
+ 417      mc_fee_two(i)            "marginal cost [USD/ton]"
+ 418      eq_gap_fee_two(i)        "net price minus marginal cost"
+ 419      exporter_surplus_two(i)  "producer surplus [million USD]"
+ 420      export_change_two(i)    "export change from baseline [%]";
+ 421   
+ 422  exports_two_fee = sum(i,Q2.l(i));
+ 423   
+ 424  price_two_fee = a + b*exports_two_fee;
+ 425   
+ 426  net_price_two_fee = price_two_fee - fee;
+ 427   
+ 428  dsi_revenue_two_fee = fee*exports_two_fee;
+ 429   
+ 430  * Producer-specific results
+ 431  q_fee_two(i) = Q2.l(i);
+ 432   
+ 433  mc_fee_two(i) = c_type(i) + d_type(i)*Q2.l(i);
+ 434   
+ 435  eq_gap_fee_two(i) = net_price_two_fee - mc_fee_two(i);
+ 436   
+ 437  exporter_surplus_two(i) =
+ 438      net_price_two_fee*Q2.l(i)
+ 439      - (c_type(i)*Q2.l(i)
+ 440      + 0.5*d_type(i)*sqr(Q2.l(i)));
+ 441   
+ 442  export_change_two(i) =
+ 443      100*(Q2.l(i)/qbar(i) - 1);
+ 444   
+ 445  display q_fee_two, exports_two_fee,
+ 446          price_two_fee, net_price_two_fee,
+ 447          dsi_revenue_two_fee,
+ 448          mc_fee_two, eq_gap_fee_two,
+ 449          exporter_surplus_two, export_change_two;
+ 450   
+ 451   
+ 452   
+ 453  * ----------------------------------------
+ 454  ** 10. Two Producer Types - Fee Sensitivity
+ 455  * ----------------------------------------
+ 456   
+ 457  * Small fees: policy scenarios
+ 458  * Large fees: hypothetical stress tests
+ 459   
+ 460  set u "two-type fee scenarios"
+ 461      /f0, f0p5, f1, f3, f5, f7, f9,
+ 462       f50, f100, f200, f400, f600, f650, f800/;
+ 463   
+ 464  parameter fee_test(u) "DSI fee [USD/ton]"
+ 465      /f0   0
+ 466       f0p5 0.5
+ 467       f1   1
+ 468       f3   3
+ 469       f5   5
+ 470       f7   7
+ 471       f9   9
+ 472       f50  50
+ 473       f100 100
+ 474       f200 200
+ 475       f400 400
+ 476       f600 600
+ 477       f650 650
+ 478       f800 800/;
+ 479   
+ 480  parameter
+ 481      results_two(u,*)      "market results"
+ 482      exports_type(u,i)    "exports by type [Mt]"
+ 483      surplus_type(u,i)    "producer surplus [million USD]"
+ 484      kkt_check(u,i)       "equilibrium condition violation";
+ 485   
+ 486  loop(u,
+ 487   
+ 488      fee = fee_test(u);
+ 489   
+ 490      Q2.l(i) = qbar(i);
+ 491   
+ 492      solve two_type_fee using qcp maximizing obj_two;
+ 493   
+ 494      exports_two_fee = sum(i,Q2.l(i));
+ 495      price_two_fee = a + b*exports_two_fee;
+ 496      net_price_two_fee = price_two_fee - fee;
+ 497   
+ 498  * Market-level results
+ 499      results_two(u,"fee") = fee;
+ 500      results_two(u,"exports_Mt") = exports_two_fee;
+ 501      results_two(u,"buyer_price") = price_two_fee;
+ 502      results_two(u,"net_price") = net_price_two_fee;
+ 503      results_two(u,"DSI_revenue") = fee*exports_two_fee;
+ 504   
+ 505      results_two(u,"export_change_pct") =
+ 506          100*(exports_two_fee/xbar - 1);
+ 507   
+ 508      results_two(u,"model_status") = two_type_fee.modelstat;
+ 509      results_two(u,"solver_status") = two_type_fee.solvestat;
+ 510   
+ 511  * Producer-level results
+ 512      exports_type(u,i) = Q2.l(i);
+ 513   
+ 514      surplus_type(u,i) =
+ 515          net_price_two_fee*Q2.l(i)
+ 516          - c_type(i)*Q2.l(i)
+ 517          - 0.5*d_type(i)*sqr(Q2.l(i));
+ 518   
+ 519  * For active producers, net price must equal MC
+ 520      kkt_check(u,i) =
+ 521          abs(net_price_two_fee
+ 522          - (c_type(i) + d_type(i)*Q2.l(i)));
+ 523   
+ 524  * For inactive producers, net price must not exceed MC(0)
+ 525      kkt_check(u,i)$(Q2.l(i) < 1e-6) =
+ 526          max(0, net_price_two_fee - c_type(i));
+ 527   
+ 528  );
+ 529   
+ 530  display results_two, exports_type,
+ 531          surplus_type, kkt_check;
+ 532   
+ 533  * Restore the reference fee
+ 534  fee = 5;
+ 535   
+ 536   
+ 537   
+ 538   
+EXIT /Users/alharkan/Documents/GitHub/ebgn645_faizalharkan/Milestone 3/Milestone3_v02.gms
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 2
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Include File Summary
+
+
+   SEQ   GLOBAL TYPE      PARENT   LOCAL  INCLVL  FILENAME
+
+     1        1 INPUT          0       0       0  /Users/alharkan/Documents/GitHub/ebgn645_faizalharkan/Milestone 3/Milestone3_v02.gms
+     2      539 EXIT           1     539       0  /Users/alharkan/Documents/GitHub/ebgn645_faizalharkan/Milestone 3/Milestone3_v02.gms
+
+
+COMPILATION TIME     =        0.001 SECONDS      3 MB  54.3.1 61154be4 DAX-DAC
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 3
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----     23 PARAMETER vbar                 =    16385.067  2025 export value [million USD]
+            PARAMETER xbar                 =       11.556  2025 export quantity [million tons]
+            PARAMETER pbar                 =     1417.933  average export price [USD/ton]
+            PARAMETER e_r                  =       -2.000  residual demand elasticity [unitless]
+            PARAMETER e_s                  =        1.000  supply elasticity [unitless]
+
+----     46 PARAMETER a                    =     2126.900  demand intercept
+            PARAMETER b                    =      -61.353  demand slope
+            PARAMETER c                    =        0.000  marginal cost intercept
+            PARAMETER d                    =      122.705  marginal cost slope
+
+----     91 PARAMETER share  assumed baseline export share
+
+low  0.500,    high 0.500
+
+
+----     91 PARAMETER ac_target  average cash cost [USD/ton product]
+
+low  1150.000,    high 1330.000
+
+
+----     91 PARAMETER qbar  baseline exports by producer [million tons]
+
+low  5.778,    high 5.778
+
+
+----     91 PARAMETER c_type  marginal cost intercept
+
+low   882.067,    high 1242.067
+
+
+----     91 PARAMETER d_type  marginal cost slope
+
+low  92.746,    high 30.438
+
+
+----     91 PARAMETER mc_check  marginal cost at baseline
+
+low  1417.933,    high 1417.933
+
+
+----     91 PARAMETER ac_check  average cost at baseline
+
+low  1150.000,    high 1330.000
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 4
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE direct_selling Using QCP From line 116
+
+
+---- eq_surplus  =E=  
+
+eq_surplus..  (0)*X + social_surplus =E= 0 ; (LHS = -12288.8000475, INFES = 12288.8000475 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 5
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE direct_selling Using QCP From line 116
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, 0)
+       (0)      eq_surplus
+
+
+---- social_surplus  total market surplus
+
+social_surplus
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+        1       eq_surplus
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 6
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE direct_selling Using QCP From line 116
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 7
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE direct_selling Using QCP From line 116
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  13     CONSTANT POOL              19
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 8
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE direct_selling Using QCP From line 116
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   direct_selling      OBJECTIVE  social_surplus
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  116
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            12288.8000
+
+ RESOURCE USAGE, LIMIT          0.018 10000000000.000
+ ITERATION COUNT, LIMIT         1    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+ 
+ CONOPT time Total                            0.004 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_surplus          .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5556        +INF            EPS         
+---- VAR social_su~        -INF        12288.8000        +INF             .          
+
+  X  export quantity
+  social_surplus  total market surplus
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 9
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    127 VARIABLE X.L                   =       11.556  export quantity
+            PARAMETER price_base           =     1417.933  
+            PARAMETER exporter_surplus_base =     8192.533  
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 10
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 152
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (5)*X + social_surplus =E= 0 ; (LHS = 57.7780000000002, INFES = 57.7780000000002 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 11
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 152
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (5)      eq_fee
+
+
+---- social_surplus  total market surplus
+
+social_surplus
+                (.LO, .L, .UP, .M = -INF, 12288.8000475, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 12
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 152
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 5.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 13
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 152
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 14
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 152
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  social_surplus
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  152
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            12231.0900
+
+ RESOURCE USAGE, LIMIT          0.005 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.001 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5284        +INF            EPS         
+---- VAR social_su~        -INF        12231.0900        +INF             .          
+
+  X  export quantity
+  social_surplus  total market surplus
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 15
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    173 VARIABLE X.L                   =       11.528  export quantity
+            PARAMETER price_fee            =     1419.600  
+            PARAMETER net_price_fee        =     1414.600  
+            PARAMETER exporter_surplus_fee =     8154.060  
+            PARAMETER dsi_revenue_fee      =       57.642  
+            PARAMETER check_eq             =  -2.2737E-13  
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 16
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 203
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (0)*X + social_surplus =E= 0 ; (LHS = -57.7100865895973, INFES = 57.7100865895973 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 17
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 203
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (0)      eq_fee
+
+
+---- social_surplus  total market surplus
+
+social_surplus
+                (.LO, .L, .UP, .M = -INF, 12231.0899609104, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 18
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 203
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 19
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 203
+
+
+LOOPS                                    s   f0
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  13     CONSTANT POOL              19
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  s f0
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 20
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 203
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  social_surplus
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  203
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            12288.8000
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         1    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+ 
+ CONOPT time Total                            0.001 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5556        +INF            EPS         
+---- VAR social_su~        -INF        12288.8000        +INF             .          
+
+  X  export quantity
+  social_surplus  total market surplus
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 21
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 203
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (0.5)*X + social_surplus =E= 0 ; (LHS = 5.77779999999984, INFES = 5.77779999999984 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 22
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 203
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (0.5)    eq_fee
+
+
+---- social_surplus  total market surplus
+
+social_surplus
+                (.LO, .L, .UP, .M = -INF, 12288.8000475, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 23
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 203
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 5.000E-01, 1.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 24
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 203
+
+
+LOOPS                                    s   f0p5
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  s f0p5
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 25
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 203
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  social_surplus
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  203
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            12283.0229
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5529        +INF            EPS         
+---- VAR social_su~        -INF        12283.0229        +INF             .          
+
+  X  export quantity
+  social_surplus  total market surplus
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 26
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 203
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (1)*X + social_surplus =E= 0 ; (LHS = 5.77847913410733, INFES = 5.77847913410733 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 27
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 203
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (1)      eq_fee
+
+
+---- social_surplus  total market surplus
+
+social_surplus
+                (.LO, .L, .UP, .M = -INF, 12283.0229266341, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 28
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 203
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 1.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 29
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 203
+
+
+LOOPS                                    s   f1
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  14     CONSTANT POOL              19
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  s f1
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 30
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 203
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  social_surplus
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  203
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            12277.2472
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.001 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5502        +INF            EPS         
+---- VAR social_su~        -INF        12277.2472        +INF             .          
+
+  X  export quantity
+  social_surplus  total market surplus
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 31
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 203
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (3)*X + social_surplus =E= 0 ; (LHS = 23.1139165364184, INFES = 23.1139165364184 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 32
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 203
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (3)      eq_fee
+
+
+---- social_surplus  total market surplus
+
+social_surplus
+                (.LO, .L, .UP, .M = -INF, 12277.2471640364, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 33
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 203
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 3.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 34
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 203
+
+
+LOOPS                                    s   f3
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  s f3
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 35
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 203
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  social_surplus
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  203
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            12254.1577
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5393        +INF            EPS         
+---- VAR social_su~        -INF        12254.1577        +INF             .          
+
+  X  export quantity
+  social_surplus  total market surplus
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 36
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 203
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (5)*X + social_surplus =E= 0 ; (LHS = 23.1356488277488, INFES = 23.1356488277488 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 37
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 203
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (5)      eq_fee
+
+
+---- social_surplus  total market surplus
+
+social_surplus
+                (.LO, .L, .UP, .M = -INF, 12254.1576963277, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 38
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 203
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 5.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 39
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 203
+
+
+LOOPS                                    s   f5
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  s f5
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 40
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 203
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  social_surplus
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  203
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            12231.0900
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5284        +INF            EPS         
+---- VAR social_su~        -INF        12231.0900        +INF             .          
+
+  X  export quantity
+  social_surplus  total market surplus
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 41
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 203
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (7)*X + social_surplus =E= 0 ; (LHS = 23.1791134104024, INFES = 23.1791134104024 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 42
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 203
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (7)      eq_fee
+
+
+---- social_surplus  total market surplus
+
+social_surplus
+                (.LO, .L, .UP, .M = -INF, 12231.0899609104, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 43
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 203
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 7.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 44
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 203
+
+
+LOOPS                                    s   f7
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  s f7
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 45
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 203
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  social_surplus
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  203
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            12208.0440
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5176        +INF            EPS         
+---- VAR social_su~        -INF        12208.0440        +INF             .          
+
+  X  export quantity
+  social_surplus  total market surplus
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 46
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 203
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (9)*X + social_surplus =E= 0 ; (LHS = 23.2443102843936, INFES = 23.2443102843936 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 47
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 203
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (9)      eq_fee
+
+
+---- social_surplus  total market surplus
+
+social_surplus
+                (.LO, .L, .UP, .M = -INF, 12208.0439577844, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 48
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 203
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 9.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 49
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 203
+
+
+LOOPS                                    s   f9
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  s f9
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 50
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 203
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  social_surplus
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  203
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            12185.0197
+
+ RESOURCE USAGE, LIMIT          0.003 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5067        +INF            EPS         
+---- VAR social_su~        -INF        12185.0197        +INF             .          
+
+  X  export quantity
+  social_surplus  total market surplus
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 51
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    228 PARAMETER fee_results  results for each fee scenario
+
+             fee  exports_Mt  price_USD~  net_price~  exporter_~  dsi_reven~  export_ch~  buyer_pri~  exporter_~
+
+f0                    11.556    1417.933    1417.933    8192.533
+f0p5       0.500      11.553    1418.100    1417.600    8188.682       5.776      -0.024       0.167      -0.333
+f1         1.000      11.550    1418.266    1417.266    8184.831      11.550      -0.047       0.333      -0.667
+f3         3.000      11.539    1418.933    1415.933    8169.438      34.618      -0.141       1.000      -2.000
+f5         5.000      11.528    1419.600    1414.600    8154.060      57.642      -0.235       1.667      -3.333
+f7         7.000      11.518    1420.266    1413.266    8138.696      80.623      -0.329       2.333      -4.667
+f9         9.000      11.507    1420.933    1411.933    8123.346     103.560      -0.423       3.000      -6.000
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 52
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 262
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (5)*X + social_surplus =E= 0 ; (LHS = -4142.26904305029, INFES = 4142.26904305029 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 53
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 262
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (5)      eq_fee
+
+
+---- social_surplus  total market surplus
+
+social_surplus
+                (.LO, .L, .UP, .M = -INF, 12185.0196869497, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 54
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 262
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 5.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 55
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 262
+
+
+LOOPS                                    t   e1
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e1
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 56
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 262
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  social_surplus
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  262
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            16327.3397
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5352        +INF            EPS         
+---- VAR social_su~        -INF        16327.3397        +INF             .          
+
+  X  export quantity
+  social_surplus  total market surplus
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 57
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 262
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (5)*X + social_surplus =E= 0 ; (LHS = 4096.3176175578, INFES = 4096.3176175578 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 58
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 262
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (5)      eq_fee
+
+
+---- social_surplus  total market surplus
+
+social_surplus
+                (.LO, .L, .UP, .M = -INF, 16327.3396650578, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 59
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 262
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 5.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 60
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 262
+
+
+LOOPS                                    t   e2
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e2
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 61
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 262
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  social_surplus
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  262
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            12231.0900
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5284        +INF            EPS         
+---- VAR social_su~        -INF        12231.0900        +INF             .          
+
+  X  export quantity
+  social_surplus  total market surplus
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 62
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 262
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (5)*X + social_surplus =E= 0 ; (LHS = 2048.2012546604, INFES = 2048.2012546604 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 63
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 262
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (5)      eq_fee
+
+
+---- social_surplus  total market surplus
+
+social_surplus
+                (.LO, .L, .UP, .M = -INF, 12231.0899609104, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 64
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 262
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 5.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 65
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 262
+
+
+LOOPS                                    t   e4
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e4
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 66
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 262
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  social_surplus
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  262
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            10182.9702
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5230        +INF            EPS         
+---- VAR social_su~        -INF        10182.9702        +INF             .          
+
+  X  export quantity
+  social_surplus  total market surplus
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 67
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    283 PARAMETER elastic_results  elasticity sensitivity results
+
+    exports_Mt  exporter_~  dsi_reven~  export_ch~  buyer_pri~  elasticity  buyer_pri~  net_expor~
+
+e1      11.535    8163.670      57.676      -0.176       2.500      -1.000    1420.433    1415.433
+e2      11.528    8154.060      57.642      -0.235       1.667      -2.000    1419.600    1414.600
+e4      11.523    8146.376      57.615      -0.282       1.000      -4.000    1418.933    1413.933
+
+
+----    324 PARAMETER margin_results  DSI operating cost and profit
+
+     margin_pct  revenue_U~  operating~  operating~
+
+m25      25.000      57.642      43.232      14.411
+m50      50.000      57.642      28.821      28.821
+m75      75.000      57.642      14.411      43.232
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 68
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE two_type_base Using QCP From line 353
+
+
+---- eq_obj_two  =E=  
+
+eq_obj_two..  (0)*Q2(low) + (0)*Q2(high) + obj_two =E= 0 ; (LHS = -6152.3894125, INFES = 6152.3894125 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 69
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE two_type_base Using QCP From line 353
+
+
+---- Q2  exports by producer type [million tons]
+
+Q2(low)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, 0)
+       (0)      eq_obj_two
+
+Q2(high)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, 0)
+       (0)      eq_obj_two
+
+
+---- obj_two  competitive equilibrium potential
+
+obj_two
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+        1       eq_obj_two
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 70
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE two_type_base Using QCP From line 353
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 71
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE two_type_base Using QCP From line 353
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             3     NON LINEAR N-Z              2
+CODE LENGTH                  24     CONSTANT POOL              22
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 72
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE two_type_base Using QCP From line 353
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   two_type_base       OBJECTIVE  obj_two
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  353
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE             6152.3894
+
+ RESOURCE USAGE, LIMIT          0.003 10000000000.000
+ ITERATION COUNT, LIMIT         1    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 3 variables
+    with 3 Jacobian elements, 2 of which are nonlinear.
+    The Hessian of the Lagrangian has 2 elements on the diagonal,
+    1 elements below the diagonal, and 2 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 2 variables.
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_obj_two          .              .              .             1.0000      
+
+---- VAR Q2  exports by producer type [million tons]
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+low           .             5.7778        +INF            EPS         
+high          .             5.7778        +INF            EPS         
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR obj_two           -INF         6152.3894        +INF             .          
+
+  obj_two  competitive equilibrium potential
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 73
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    376 VARIABLE Q2.L  exports by producer type [million tons]
+
+low  5.778,    high 5.778
+
+
+----    376 PARAMETER exports_two          =       11.556  
+            PARAMETER price_two            =     1417.933  
+
+----    376 PARAMETER mc_two  marginal cost by type
+
+low  1417.933,    high 1417.933
+
+
+----    376 PARAMETER eq_gap_two  price minus marginal cost
+
+                      ( ALL       0.000 )
+
+
+----    376 PARAMETER quantity_gap_two     =        0.000  
+            PARAMETER price_gap_two        =        0.000  
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 74
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE two_type_fee Using QCP From line 406
+
+
+---- eq_obj_two_fee  =E=  
+
+eq_obj_two_fee..  (5)*Q2(low) + (5)*Q2(high) + obj_two =E= 0 ; (LHS = 57.7780000000002, INFES = 57.7780000000002 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 75
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE two_type_fee Using QCP From line 406
+
+
+---- Q2  exports by producer type [million tons]
+
+Q2(low)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+       (5)      eq_obj_two_fee
+
+Q2(high)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+       (5)      eq_obj_two_fee
+
+
+---- obj_two  competitive equilibrium potential
+
+obj_two
+                (.LO, .L, .UP, .M = -INF, 6152.3894125, +INF, 0)
+        1       eq_obj_two_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 76
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE two_type_fee Using QCP From line 406
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 5.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 77
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE two_type_fee Using QCP From line 406
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             3     NON LINEAR N-Z              2
+CODE LENGTH                  28     CONSTANT POOL              23
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 78
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE two_type_fee Using QCP From line 406
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   two_type_fee        OBJECTIVE  obj_two
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  406
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE             6094.7597
+
+ RESOURCE USAGE, LIMIT          0.003 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 3 variables
+    with 3 Jacobian elements, 2 of which are nonlinear.
+    The Hessian of the Lagrangian has 2 elements on the diagonal,
+    1 elements below the diagonal, and 2 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 2 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_obj_tw~          .              .              .             1.0000      
+
+---- VAR Q2  exports by producer type [million tons]
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+low           .             5.7631        +INF            EPS         
+high          .             5.7331        +INF            EPS         
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR obj_two           -INF         6094.7597        +INF             .          
+
+  obj_two  competitive equilibrium potential
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 79
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    445 PARAMETER q_fee_two  exports by producer [Mt]
+
+low  5.763,    high 5.733
+
+
+----    445 PARAMETER exports_two_fee      =       11.496  
+            PARAMETER price_two_fee        =     1421.573  
+            PARAMETER net_price_two_fee    =     1416.573  
+            PARAMETER dsi_revenue_two_fee  =       57.481  
+
+----    445 PARAMETER mc_fee_two  marginal cost [USD/ton]
+
+low  1416.573,    high 1416.573
+
+
+----    445 PARAMETER eq_gap_fee_two  net price minus marginal cost
+
+                      ( ALL       0.000 )
+
+
+----    445 PARAMETER exporter_surplus_two  producer surplus [million USD]
+
+low  1540.217,    high  500.233
+
+
+----    445 PARAMETER export_change_two  export change from baseline [%]
+
+low  -0.254,    high -0.773
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 80
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE two_type_fee Using QCP From line 492
+
+
+---- eq_obj_two_fee  =E=  
+
+eq_obj_two_fee..  (0)*Q2(low) + (0)*Q2(high) + obj_two =E= 0 ; (LHS = -57.6296667455263, INFES = 57.6296667455263 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 81
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE two_type_fee Using QCP From line 492
+
+
+---- Q2  exports by producer type [million tons]
+
+Q2(low)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+       (0)      eq_obj_two_fee
+
+Q2(high)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+       (0)      eq_obj_two_fee
+
+
+---- obj_two  competitive equilibrium potential
+
+obj_two
+                (.LO, .L, .UP, .M = -INF, 6094.75974575447, +INF, 0)
+        1       eq_obj_two_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 82
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 83
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+LOOPS                                    u   f0
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             3     NON LINEAR N-Z              2
+CODE LENGTH                  24     CONSTANT POOL              22
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  u f0
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 84
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE two_type_fee Using QCP From line 492
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   two_type_fee        OBJECTIVE  obj_two
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  492
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE             6152.3894
+
+ RESOURCE USAGE, LIMIT          0.003 10000000000.000
+ ITERATION COUNT, LIMIT         1    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 3 variables
+    with 3 Jacobian elements, 2 of which are nonlinear.
+    The Hessian of the Lagrangian has 2 elements on the diagonal,
+    1 elements below the diagonal, and 2 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 2 variables.
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_obj_tw~          .              .              .             1.0000      
+
+---- VAR Q2  exports by producer type [million tons]
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+low           .             5.7778        +INF            EPS         
+high          .             5.7778        +INF            EPS         
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR obj_two           -INF         6152.3894        +INF             .          
+
+  obj_two  competitive equilibrium potential
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 85
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE two_type_fee Using QCP From line 492
+
+
+---- eq_obj_two_fee  =E=  
+
+eq_obj_two_fee..  (0.5)*Q2(low) + (0.5)*Q2(high) + obj_two =E= 0 ; (LHS = 5.77779999999984, INFES = 5.77779999999984 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 86
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE two_type_fee Using QCP From line 492
+
+
+---- Q2  exports by producer type [million tons]
+
+Q2(low)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+       (0.5)    eq_obj_two_fee
+
+Q2(high)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+       (0.5)    eq_obj_two_fee
+
+
+---- obj_two  competitive equilibrium potential
+
+obj_two
+                (.LO, .L, .UP, .M = -INF, 6152.3894125, +INF, 0)
+        1       eq_obj_two_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 87
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 5.000E-01, 1.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 88
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+LOOPS                                    u   f0p5
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             3     NON LINEAR N-Z              2
+CODE LENGTH                  28     CONSTANT POOL              23
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  u f0p5
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 89
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE two_type_fee Using QCP From line 492
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   two_type_fee        OBJECTIVE  obj_two
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  492
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE             6146.6131
+
+ RESOURCE USAGE, LIMIT          0.003 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 3 variables
+    with 3 Jacobian elements, 2 of which are nonlinear.
+    The Hessian of the Lagrangian has 2 elements on the diagonal,
+    1 elements below the diagonal, and 2 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 2 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_obj_tw~          .              .              .             1.0000      
+
+---- VAR Q2  exports by producer type [million tons]
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+low           .             5.7763        +INF            EPS         
+high          .             5.7733        +INF            EPS         
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR obj_two           -INF         6146.6131        +INF             .          
+
+  obj_two  competitive equilibrium potential
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 90
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE two_type_fee Using QCP From line 492
+
+
+---- eq_obj_two_fee  =E=  
+
+eq_obj_two_fee..  (1)*Q2(low) + (1)*Q2(high) + obj_two =E= 0 ; (LHS = 5.77928333254658, INFES = 5.77928333254658 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 91
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE two_type_fee Using QCP From line 492
+
+
+---- Q2  exports by producer type [million tons]
+
+Q2(low)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+       (1)      eq_obj_two_fee
+
+Q2(high)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+       (1)      eq_obj_two_fee
+
+
+---- obj_two  competitive equilibrium potential
+
+obj_two
+                (.LO, .L, .UP, .M = -INF, 6146.61309583254, +INF, 0)
+        1       eq_obj_two_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 92
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 1.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 93
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+LOOPS                                    u   f1
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             3     NON LINEAR N-Z              2
+CODE LENGTH                  26     CONSTANT POOL              22
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  u f1
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 94
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE two_type_fee Using QCP From line 492
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   two_type_fee        OBJECTIVE  obj_two
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  492
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE             6140.8397
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 3 variables
+    with 3 Jacobian elements, 2 of which are nonlinear.
+    The Hessian of the Lagrangian has 2 elements on the diagonal,
+    1 elements below the diagonal, and 2 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 2 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_obj_tw~          .              .              .             1.0000      
+
+---- VAR Q2  exports by producer type [million tons]
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+low           .             5.7749        +INF            EPS         
+high          .             5.7689        +INF            EPS         
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR obj_two           -INF         6140.8397        +INF             .          
+
+  obj_two  competitive equilibrium potential
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 95
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE two_type_fee Using QCP From line 492
+
+
+---- eq_obj_two_fee  =E=  
+
+eq_obj_two_fee..  (3)*Q2(low) + (3)*Q2(high) + obj_two =E= 0 ; (LHS = 23.1171333301818, INFES = 23.1171333301818 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 96
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE two_type_fee Using QCP From line 492
+
+
+---- Q2  exports by producer type [million tons]
+
+Q2(low)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+       (3)      eq_obj_two_fee
+
+Q2(high)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+       (3)      eq_obj_two_fee
+
+
+---- obj_two  competitive equilibrium potential
+
+obj_two
+                (.LO, .L, .UP, .M = -INF, 6140.83974583018, +INF, 0)
+        1       eq_obj_two_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 97
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 3.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 98
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+LOOPS                                    u   f3
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             3     NON LINEAR N-Z              2
+CODE LENGTH                  28     CONSTANT POOL              23
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  u f3
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 99
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE two_type_fee Using QCP From line 492
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   two_type_fee        OBJECTIVE  obj_two
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  492
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE             6117.7760
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 3 variables
+    with 3 Jacobian elements, 2 of which are nonlinear.
+    The Hessian of the Lagrangian has 2 elements on the diagonal,
+    1 elements below the diagonal, and 2 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 2 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.001 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.001 =100.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_obj_tw~          .              .              .             1.0000      
+
+---- VAR Q2  exports by producer type [million tons]
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+low           .             5.7690        +INF            EPS         
+high          .             5.7510        +INF            EPS         
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR obj_two           -INF         6117.7760        +INF             .          
+
+  obj_two  competitive equilibrium potential
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 100
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE two_type_fee Using QCP From line 492
+
+
+---- eq_obj_two_fee  =E=  
+
+eq_obj_two_fee..  (5)*Q2(low) + (5)*Q2(high) + obj_two =E= 0 ; (LHS = 23.164599971612, INFES = 23.164599971612 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 101
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE two_type_fee Using QCP From line 492
+
+
+---- Q2  exports by producer type [million tons]
+
+Q2(low)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+       (5)      eq_obj_two_fee
+
+Q2(high)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+       (5)      eq_obj_two_fee
+
+
+---- obj_two  competitive equilibrium potential
+
+obj_two
+                (.LO, .L, .UP, .M = -INF, 6117.77601247161, +INF, 0)
+        1       eq_obj_two_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 102
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 5.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 103
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+LOOPS                                    u   f5
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             3     NON LINEAR N-Z              2
+CODE LENGTH                  28     CONSTANT POOL              23
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  u f5
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 104
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE two_type_fee Using QCP From line 492
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   two_type_fee        OBJECTIVE  obj_two
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  492
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE             6094.7597
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 3 variables
+    with 3 Jacobian elements, 2 of which are nonlinear.
+    The Hessian of the Lagrangian has 2 elements on the diagonal,
+    1 elements below the diagonal, and 2 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 2 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_obj_tw~          .              .              .             1.0000      
+
+---- VAR Q2  exports by producer type [million tons]
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+low           .             5.7631        +INF            EPS         
+high          .             5.7331        +INF            EPS         
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR obj_two           -INF         6094.7597        +INF             .          
+
+  obj_two  competitive equilibrium potential
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 105
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE two_type_fee Using QCP From line 492
+
+
+---- eq_obj_two_fee  =E=  
+
+eq_obj_two_fee..  (7)*Q2(low) + (7)*Q2(high) + obj_two =E= 0 ; (LHS = 23.2595332544734, INFES = 23.2595332544734 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 106
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE two_type_fee Using QCP From line 492
+
+
+---- Q2  exports by producer type [million tons]
+
+Q2(low)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+       (7)      eq_obj_two_fee
+
+Q2(high)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+       (7)      eq_obj_two_fee
+
+
+---- obj_two  competitive equilibrium potential
+
+obj_two
+                (.LO, .L, .UP, .M = -INF, 6094.75974575447, +INF, 0)
+        1       eq_obj_two_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 107
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 7.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 108
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+LOOPS                                    u   f7
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             3     NON LINEAR N-Z              2
+CODE LENGTH                  28     CONSTANT POOL              23
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  u f7
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 109
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE two_type_fee Using QCP From line 492
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   two_type_fee        OBJECTIVE  obj_two
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  492
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE             6071.7909
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 3 variables
+    with 3 Jacobian elements, 2 of which are nonlinear.
+    The Hessian of the Lagrangian has 2 elements on the diagonal,
+    1 elements below the diagonal, and 2 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 2 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.001 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_obj_tw~          .              .              .             1.0000      
+
+---- VAR Q2  exports by producer type [million tons]
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+low           .             5.7573        +INF            EPS         
+high          .             5.7153        +INF            EPS         
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR obj_two           -INF         6071.7909        +INF             .          
+
+  obj_two  competitive equilibrium potential
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 110
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE two_type_fee Using QCP From line 492
+
+
+---- eq_obj_two_fee  =E=  
+
+eq_obj_two_fee..  (9)*Q2(low) + (9)*Q2(high) + obj_two =E= 0 ; (LHS = 23.4019331787704, INFES = 23.4019331787704 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 111
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE two_type_fee Using QCP From line 492
+
+
+---- Q2  exports by producer type [million tons]
+
+Q2(low)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+       (9)      eq_obj_two_fee
+
+Q2(high)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+       (9)      eq_obj_two_fee
+
+
+---- obj_two  competitive equilibrium potential
+
+obj_two
+                (.LO, .L, .UP, .M = -INF, 6071.79094567877, +INF, 0)
+        1       eq_obj_two_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 112
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 9.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 113
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+LOOPS                                    u   f9
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             3     NON LINEAR N-Z              2
+CODE LENGTH                  28     CONSTANT POOL              23
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  u f9
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 114
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE two_type_fee Using QCP From line 492
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   two_type_fee        OBJECTIVE  obj_two
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  492
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE             6048.8696
+
+ RESOURCE USAGE, LIMIT          0.003 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 3 variables
+    with 3 Jacobian elements, 2 of which are nonlinear.
+    The Hessian of the Lagrangian has 2 elements on the diagonal,
+    1 elements below the diagonal, and 2 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 2 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_obj_tw~          .              .              .             1.0000      
+
+---- VAR Q2  exports by producer type [million tons]
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+low           .             5.7514        +INF            EPS         
+high          .             5.6974        +INF            EPS         
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR obj_two           -INF         6048.8696        +INF             .          
+
+  obj_two  competitive equilibrium potential
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 115
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE two_type_fee Using QCP From line 492
+
+
+---- eq_obj_two_fee  =E=  
+
+eq_obj_two_fee..  (50)*Q2(low) + (50)*Q2(high) + obj_two =E= 0 ; (LHS = 474.260199744496, INFES = 474.260199744496 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 116
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE two_type_fee Using QCP From line 492
+
+
+---- Q2  exports by producer type [million tons]
+
+Q2(low)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+      (50)      eq_obj_two_fee
+
+Q2(high)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+      (50)      eq_obj_two_fee
+
+
+---- obj_two  competitive equilibrium potential
+
+obj_two
+                (.LO, .L, .UP, .M = -INF, 6048.86961224449, +INF, 0)
+        1       eq_obj_two_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 117
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 5.000E+01]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 118
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+LOOPS                                    u   f50
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             3     NON LINEAR N-Z              2
+CODE LENGTH                  28     CONSTANT POOL              23
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  u f50
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 119
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE two_type_fee Using QCP From line 492
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   two_type_fee        OBJECTIVE  obj_two
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  492
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE             5589.4427
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 3 variables
+    with 3 Jacobian elements, 2 of which are nonlinear.
+    The Hessian of the Lagrangian has 2 elements on the diagonal,
+    1 elements below the diagonal, and 2 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 2 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.001 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_obj_tw~          .              .              .             1.0000      
+
+---- VAR Q2  exports by producer type [million tons]
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+low           .             5.6312        +INF            EPS         
+high          .             5.3311        +INF            EPS         
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR obj_two           -INF         5589.4427        +INF             .          
+
+  obj_two  competitive equilibrium potential
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 120
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE two_type_fee Using QCP From line 492
+
+
+---- eq_obj_two_fee  =E=  
+
+eq_obj_two_fee..  (100)*Q2(low) + (100)*Q2(high) + obj_two =E= 0 ; (LHS = 592.613325447364, INFES = 592.613325447364 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 121
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE two_type_fee Using QCP From line 492
+
+
+---- Q2  exports by producer type [million tons]
+
+Q2(low)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+     (100)      eq_obj_two_fee
+
+Q2(high)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+     (100)      eq_obj_two_fee
+
+
+---- obj_two  competitive equilibrium potential
+
+obj_two
+                (.LO, .L, .UP, .M = -INF, 5589.44273794736, +INF, 0)
+        1       eq_obj_two_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 122
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 1.000E+02]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 123
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+LOOPS                                    u   f100
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             3     NON LINEAR N-Z              2
+CODE LENGTH                  28     CONSTANT POOL              23
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  u f100
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 124
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE two_type_fee Using QCP From line 492
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   two_type_fee        OBJECTIVE  obj_two
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  492
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE             5056.1627
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 3 variables
+    with 3 Jacobian elements, 2 of which are nonlinear.
+    The Hessian of the Lagrangian has 2 elements on the diagonal,
+    1 elements below the diagonal, and 2 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 2 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_obj_tw~          .              .              .             1.0000      
+
+---- VAR Q2  exports by producer type [million tons]
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+low           .             5.4846        +INF            EPS         
+high          .             4.8844        +INF            EPS         
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR obj_two           -INF         5056.1627        +INF             .          
+
+  obj_two  competitive equilibrium potential
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 125
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE two_type_fee Using QCP From line 492
+
+
+---- eq_obj_two_fee  =E=  
+
+eq_obj_two_fee..  (200)*Q2(low) + (200)*Q2(high) + obj_two =E= 0 ; (LHS = 1214.89330178946, INFES = 1214.89330178946 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 126
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE two_type_fee Using QCP From line 492
+
+
+---- Q2  exports by producer type [million tons]
+
+Q2(low)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+     (200)      eq_obj_two_fee
+
+Q2(high)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+     (200)      eq_obj_two_fee
+
+
+---- obj_two  competitive equilibrium potential
+
+obj_two
+                (.LO, .L, .UP, .M = -INF, 5056.16271428946, +INF, 0)
+        1       eq_obj_two_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 127
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 2.000E+02]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 128
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+LOOPS                                    u   f200
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             3     NON LINEAR N-Z              2
+CODE LENGTH                  28     CONSTANT POOL              23
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  u f200
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 129
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE two_type_fee Using QCP From line 492
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   two_type_fee        OBJECTIVE  obj_two
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  492
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE             4078.6026
+
+ RESOURCE USAGE, LIMIT          0.003 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 3 variables
+    with 3 Jacobian elements, 2 of which are nonlinear.
+    The Hessian of the Lagrangian has 2 elements on the diagonal,
+    1 elements below the diagonal, and 2 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 2 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_obj_tw~          .              .              .             1.0000      
+
+---- VAR Q2  exports by producer type [million tons]
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+low           .             5.1914        +INF            EPS         
+high          .             3.9909        +INF            EPS         
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR obj_two           -INF         4078.6026        +INF             .          
+
+  obj_two  competitive equilibrium potential
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 130
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE two_type_fee Using QCP From line 492
+
+
+---- eq_obj_two_fee  =E=  
+
+eq_obj_two_fee..  (400)*Q2(low) + (400)*Q2(high) + obj_two =E= 0 ; (LHS = 2548.45320715784, INFES = 2548.45320715784 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 131
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE two_type_fee Using QCP From line 492
+
+
+---- Q2  exports by producer type [million tons]
+
+Q2(low)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+     (400)      eq_obj_two_fee
+
+Q2(high)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+     (400)      eq_obj_two_fee
+
+
+---- obj_two  competitive equilibrium potential
+
+obj_two
+                (.LO, .L, .UP, .M = -INF, 4078.60261965784, +INF, 0)
+        1       eq_obj_two_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 132
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 4.000E+02]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 133
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+LOOPS                                    u   f400
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             3     NON LINEAR N-Z              2
+CODE LENGTH                  28     CONSTANT POOL              23
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  u f400
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 134
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE two_type_fee Using QCP From line 492
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   two_type_fee        OBJECTIVE  obj_two
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  492
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE             2479.4822
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 3 variables
+    with 3 Jacobian elements, 2 of which are nonlinear.
+    The Hessian of the Lagrangian has 2 elements on the diagonal,
+    1 elements below the diagonal, and 2 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 2 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_obj_tw~          .              .              .             1.0000      
+
+---- VAR Q2  exports by producer type [million tons]
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+low           .             4.6049        +INF            EPS         
+high          .             2.2040        +INF            EPS         
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR obj_two           -INF         2479.4822        +INF             .          
+
+  obj_two  competitive equilibrium potential
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 135
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE two_type_fee Using QCP From line 492
+
+
+---- eq_obj_two_fee  =E=  
+
+eq_obj_two_fee..  (600)*Q2(low) + (600)*Q2(high) + obj_two =E= 0 ; (LHS = 3260.45282863138, INFES = 3260.45282863138 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 136
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE two_type_fee Using QCP From line 492
+
+
+---- Q2  exports by producer type [million tons]
+
+Q2(low)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+     (600)      eq_obj_two_fee
+
+Q2(high)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+     (600)      eq_obj_two_fee
+
+
+---- obj_two  competitive equilibrium potential
+
+obj_two
+                (.LO, .L, .UP, .M = -INF, 2479.48224113138, +INF, 0)
+        1       eq_obj_two_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 137
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 6.000E+02]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 138
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+LOOPS                                    u   f600
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             3     NON LINEAR N-Z              2
+CODE LENGTH                  28     CONSTANT POOL              23
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  u f600
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 139
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE two_type_fee Using QCP From line 492
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   two_type_fee        OBJECTIVE  obj_two
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  492
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE             1355.0283
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 3 variables
+    with 3 Jacobian elements, 2 of which are nonlinear.
+    The Hessian of the Lagrangian has 2 elements on the diagonal,
+    1 elements below the diagonal, and 2 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 2 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_obj_tw~          .              .              .             1.0000      
+
+---- VAR Q2  exports by producer type [million tons]
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+low           .             4.0185        +INF            EPS         
+high          .             0.4171        +INF            EPS         
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR obj_two           -INF         1355.0283        +INF             .          
+
+  obj_two  competitive equilibrium potential
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 140
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE two_type_fee Using QCP From line 492
+
+
+---- eq_obj_two_fee  =E=  
+
+eq_obj_two_fee..  (650)*Q2(low) + (650)*Q2(high) + obj_two =E= 0 ; (LHS = 2713.7788644206, INFES = 2713.7788644206 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 141
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE two_type_fee Using QCP From line 492
+
+
+---- Q2  exports by producer type [million tons]
+
+Q2(low)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+     (650)      eq_obj_two_fee
+
+Q2(high)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+     (650)      eq_obj_two_fee
+
+
+---- obj_two  competitive equilibrium potential
+
+obj_two
+                (.LO, .L, .UP, .M = -INF, 1355.0282769206, +INF, 0)
+        1       eq_obj_two_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 142
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 6.500E+02]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 143
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+LOOPS                                    u   f650
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             3     NON LINEAR N-Z              2
+CODE LENGTH                  28     CONSTANT POOL              23
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  u f650
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 144
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE two_type_fee Using QCP From line 492
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   two_type_fee        OBJECTIVE  obj_two
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  492
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE             1148.0519
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         3    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 3 variables
+    with 3 Jacobian elements, 2 of which are nonlinear.
+    The Hessian of the Lagrangian has 2 elements on the diagonal,
+    1 elements below the diagonal, and 2 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 2 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_obj_tw~          .              .              .             1.0000      
+
+---- VAR Q2  exports by producer type [million tons]
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+low           .             3.8601        +INF            EPS         
+high          .              .            +INF           -1.9938      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR obj_two           -INF         1148.0519        +INF             .          
+
+  obj_two  competitive equilibrium potential
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 145
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE two_type_fee Using QCP From line 492
+
+
+---- eq_obj_two_fee  =E=  
+
+eq_obj_two_fee..  (800)*Q2(low) + (800)*Q2(high) + obj_two =E= 0 ; (LHS = 4240.14249439339, INFES = 4240.14249439339 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 146
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE two_type_fee Using QCP From line 492
+
+
+---- Q2  exports by producer type [million tons]
+
+Q2(low)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, EPS)
+     (800)      eq_obj_two_fee
+
+Q2(high)
+                (.LO, .L, .UP, .M = 0, 5.7778, +INF, -1.99381804714523)
+     (800)      eq_obj_two_fee
+
+
+---- obj_two  competitive equilibrium potential
+
+obj_two
+                (.LO, .L, .UP, .M = -INF, 1148.05190689339, +INF, 0)
+        1       eq_obj_two_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 147
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 8.000E+02]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 148
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE two_type_fee Using QCP From line 492
+
+
+LOOPS                                    u   f800
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             3     NON LINEAR N-Z              2
+CODE LENGTH                  28     CONSTANT POOL              23
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  u f800
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 149
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE two_type_fee Using QCP From line 492
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   two_type_fee        OBJECTIVE  obj_two
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  492
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE              642.0446
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 3 variables
+    with 3 Jacobian elements, 2 of which are nonlinear.
+    The Hessian of the Lagrangian has 2 elements on the diagonal,
+    1 elements below the diagonal, and 2 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 2 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_obj_tw~          .              .              .             1.0000      
+
+---- VAR Q2  exports by producer type [million tons]
+
+            LOWER          LEVEL          UPPER         MARGINAL
+
+low           .             2.8867        +INF            EPS         
+high          .              .            +INF          -92.2729      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR obj_two           -INF          642.0446        +INF             .          
+
+  obj_two  competitive equilibrium potential
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/20/26 11:34:49 Page 150
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    530 PARAMETER results_two  market results
+
+             fee  exports_Mt  export_ch~  buyer_pri~   net_price  DSI_reven~  model_sta~  solver_st~
+
+f0                    11.556                1417.933    1417.933                   2.000       1.000
+f0p5       0.500      11.550      -0.051    1418.297    1417.797       5.775       2.000       1.000
+f1         1.000      11.544      -0.103    1418.661    1417.661      11.544       2.000       1.000
+f3         3.000      11.520      -0.308    1420.117    1417.117      34.560       2.000       1.000
+f5         5.000      11.496      -0.513    1421.573    1416.573      57.481       2.000       1.000
+f7         7.000      11.473      -0.719    1423.029    1416.029      80.308       2.000       1.000
+f9         9.000      11.449      -0.924    1424.485    1415.485     103.039       2.000       1.000
+f50       50.000      10.962      -5.135    1454.336    1404.336     548.113       2.000       1.000
+f100     100.000      10.369     -10.269    1490.738    1390.738    1036.893       2.000       1.000
+f200     200.000       9.182     -20.538    1563.543    1363.543    1836.454       2.000       1.000
+f400     400.000       6.809     -41.077    1709.153    1309.153    2723.574       2.000       1.000
+f600     600.000       4.436     -61.615    1854.764    1254.764    2661.362       2.000       1.000
+f650     650.000       3.860     -66.596    1890.073    1240.073    2509.055       2.000       1.000
+f800     800.000       2.887     -75.019    1949.794    1149.794    2309.344       2.000       1.000
+
+
+----    530 PARAMETER exports_type  exports by type [Mt]
+
+             low        high
+
+f0         5.778       5.778
+f0p5       5.776       5.773
+f1         5.775       5.769
+f3         5.769       5.751
+f5         5.763       5.733
+f7         5.757       5.715
+f9         5.751       5.697
+f50        5.631       5.331
+f100       5.485       4.884
+f200       5.191       3.991
+f400       4.605       2.204
+f600       4.018       0.417
+f650       3.860
+f800       2.887
+
+
+----    530 PARAMETER surplus_type  producer surplus [million USD]
+
+             low        high
+
+f0      1548.063     508.059
+f0p5    1547.278     507.274
+f1      1546.492     506.489
+f3      1543.353     503.356
+f5      1540.217     500.233
+f7      1537.084     497.120
+f9      1533.954     494.016
+f50     1470.497     432.533
+f100    1394.924     363.081
+f200    1249.758     242.400
+f400     983.349      73.930
+f600     748.837       2.648
+f650     690.967
+f800     386.421
+
+
+----    530 PARAMETER kkt_check  equilibrium condition violation
+
+             low        high
+
+f1   2.27374E-13 2.27374E-13
+f3   2.27374E-13 2.27374E-13
+f7   9.09495E-13 4.54747E-13
+f9   2.27374E-13
+f50  4.54747E-13 4.54747E-13
+f100 1.59162E-12 1.13687E-12
+f200 2.95586E-12 2.04636E-12
+f400 5.91172E-12 4.09273E-12
+f600 5.86624E-11 4.18368E-11
+f650 2.27374E-13
+f800 2.27374E-13
+
+
+
+EXECUTION TIME       =        0.399 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+
+
+USER: Course License                                 G260809+0003Ac-GEN
+      Colorado School of Mines                                  DCE5587
+      License for teaching and research at degree granting institutions
+
+
+**** FILE SUMMARY
+
+Input      /Users/alharkan/Documents/GitHub/ebgn645_faizalharkan/Milestone 3/Milestone3_v02.gms
+Output     /Users/alharkan/Documents/GitHub/ebgn645_faizalharkan/Milestone 3/Milestone3_v02.lst

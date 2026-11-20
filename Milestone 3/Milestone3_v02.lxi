@@ -1,0 +1,366 @@
+B 3 C o m p i l a t i o n
+B 547 Include File Summary
+B 559 E x e c u t i o n
+I 561 vbar
+I 562 xbar
+I 563 pbar
+I 564 e_r
+I 565 e_s
+I 567 a
+I 568 b
+I 569 c
+I 570 d
+I 571 share
+I 576 ac_target
+I 581 qbar
+I 586 c_type
+I 591 d_type
+I 596 mc_check
+I 601 ac_check
+B 609 Equation Listing    SOLVE direct_selling Using QCP From line 116
+D 612 eq_surplus
+B 618 Column Listing      SOLVE direct_selling Using QCP From line 116
+E 621 X
+E 628 social_surplus
+B 636 Range Statistics    SOLVE direct_selling Using QCP From line 116
+B 647 Model Statistics    SOLVE direct_selling Using QCP From line 116
+B 661 Solution Report     SOLVE direct_selling Using QCP From line 116
+F 707 eq_surplus
+G 711 X
+G 712 social_surplus
+B 724 E x e c u t i o n
+I 726 X
+I 727 price_base
+I 728 exporter_surplus_base
+B 732 Equation Listing    SOLVE with_dsi_fee Using QCP From line 152
+D 735 eq_fee
+B 741 Column Listing      SOLVE with_dsi_fee Using QCP From line 152
+E 744 X
+E 751 social_surplus
+B 759 Range Statistics    SOLVE with_dsi_fee Using QCP From line 152
+B 770 Model Statistics    SOLVE with_dsi_fee Using QCP From line 152
+B 784 Solution Report     SOLVE with_dsi_fee Using QCP From line 152
+F 831 eq_fee
+G 835 X
+G 836 social_surplus
+B 848 E x e c u t i o n
+I 850 X
+I 851 price_fee
+I 852 net_price_fee
+I 853 exporter_surplus_fee
+I 854 dsi_revenue_fee
+I 855 check_eq
+B 859 Equation Listing    SOLVE with_dsi_fee Using QCP From line 203
+D 862 eq_fee
+B 868 Column Listing      SOLVE with_dsi_fee Using QCP From line 203
+E 871 X
+E 878 social_surplus
+B 886 Range Statistics    SOLVE with_dsi_fee Using QCP From line 203
+B 897 Model Statistics    SOLVE with_dsi_fee Using QCP From line 203
+B 916 Solution Report     SOLVE with_dsi_fee Using QCP From line 203
+F 962 eq_fee
+G 966 X
+G 967 social_surplus
+B 979 Equation Listing    SOLVE with_dsi_fee Using QCP From line 203
+D 982 eq_fee
+B 988 Column Listing      SOLVE with_dsi_fee Using QCP From line 203
+E 991 X
+E 998 social_surplus
+B 1006 Range Statistics    SOLVE with_dsi_fee Using QCP From line 203
+B 1017 Model Statistics    SOLVE with_dsi_fee Using QCP From line 203
+B 1036 Solution Report     SOLVE with_dsi_fee Using QCP From line 203
+F 1083 eq_fee
+G 1087 X
+G 1088 social_surplus
+B 1100 Equation Listing    SOLVE with_dsi_fee Using QCP From line 203
+D 1103 eq_fee
+B 1109 Column Listing      SOLVE with_dsi_fee Using QCP From line 203
+E 1112 X
+E 1119 social_surplus
+B 1127 Range Statistics    SOLVE with_dsi_fee Using QCP From line 203
+B 1138 Model Statistics    SOLVE with_dsi_fee Using QCP From line 203
+B 1157 Solution Report     SOLVE with_dsi_fee Using QCP From line 203
+F 1204 eq_fee
+G 1208 X
+G 1209 social_surplus
+B 1221 Equation Listing    SOLVE with_dsi_fee Using QCP From line 203
+D 1224 eq_fee
+B 1230 Column Listing      SOLVE with_dsi_fee Using QCP From line 203
+E 1233 X
+E 1240 social_surplus
+B 1248 Range Statistics    SOLVE with_dsi_fee Using QCP From line 203
+B 1259 Model Statistics    SOLVE with_dsi_fee Using QCP From line 203
+B 1278 Solution Report     SOLVE with_dsi_fee Using QCP From line 203
+F 1325 eq_fee
+G 1329 X
+G 1330 social_surplus
+B 1342 Equation Listing    SOLVE with_dsi_fee Using QCP From line 203
+D 1345 eq_fee
+B 1351 Column Listing      SOLVE with_dsi_fee Using QCP From line 203
+E 1354 X
+E 1361 social_surplus
+B 1369 Range Statistics    SOLVE with_dsi_fee Using QCP From line 203
+B 1380 Model Statistics    SOLVE with_dsi_fee Using QCP From line 203
+B 1399 Solution Report     SOLVE with_dsi_fee Using QCP From line 203
+F 1446 eq_fee
+G 1450 X
+G 1451 social_surplus
+B 1463 Equation Listing    SOLVE with_dsi_fee Using QCP From line 203
+D 1466 eq_fee
+B 1472 Column Listing      SOLVE with_dsi_fee Using QCP From line 203
+E 1475 X
+E 1482 social_surplus
+B 1490 Range Statistics    SOLVE with_dsi_fee Using QCP From line 203
+B 1501 Model Statistics    SOLVE with_dsi_fee Using QCP From line 203
+B 1520 Solution Report     SOLVE with_dsi_fee Using QCP From line 203
+F 1567 eq_fee
+G 1571 X
+G 1572 social_surplus
+B 1584 Equation Listing    SOLVE with_dsi_fee Using QCP From line 203
+D 1587 eq_fee
+B 1593 Column Listing      SOLVE with_dsi_fee Using QCP From line 203
+E 1596 X
+E 1603 social_surplus
+B 1611 Range Statistics    SOLVE with_dsi_fee Using QCP From line 203
+B 1622 Model Statistics    SOLVE with_dsi_fee Using QCP From line 203
+B 1641 Solution Report     SOLVE with_dsi_fee Using QCP From line 203
+F 1688 eq_fee
+G 1692 X
+G 1693 social_surplus
+B 1705 E x e c u t i o n
+I 1705 fee_results
+B 1722 Equation Listing    SOLVE with_dsi_fee Using QCP From line 262
+D 1725 eq_fee
+B 1731 Column Listing      SOLVE with_dsi_fee Using QCP From line 262
+E 1734 X
+E 1741 social_surplus
+B 1749 Range Statistics    SOLVE with_dsi_fee Using QCP From line 262
+B 1760 Model Statistics    SOLVE with_dsi_fee Using QCP From line 262
+B 1779 Solution Report     SOLVE with_dsi_fee Using QCP From line 262
+F 1826 eq_fee
+G 1830 X
+G 1831 social_surplus
+B 1843 Equation Listing    SOLVE with_dsi_fee Using QCP From line 262
+D 1846 eq_fee
+B 1852 Column Listing      SOLVE with_dsi_fee Using QCP From line 262
+E 1855 X
+E 1862 social_surplus
+B 1870 Range Statistics    SOLVE with_dsi_fee Using QCP From line 262
+B 1881 Model Statistics    SOLVE with_dsi_fee Using QCP From line 262
+B 1900 Solution Report     SOLVE with_dsi_fee Using QCP From line 262
+F 1947 eq_fee
+G 1951 X
+G 1952 social_surplus
+B 1964 Equation Listing    SOLVE with_dsi_fee Using QCP From line 262
+D 1967 eq_fee
+B 1973 Column Listing      SOLVE with_dsi_fee Using QCP From line 262
+E 1976 X
+E 1983 social_surplus
+B 1991 Range Statistics    SOLVE with_dsi_fee Using QCP From line 262
+B 2002 Model Statistics    SOLVE with_dsi_fee Using QCP From line 262
+B 2021 Solution Report     SOLVE with_dsi_fee Using QCP From line 262
+F 2068 eq_fee
+G 2072 X
+G 2073 social_surplus
+B 2085 E x e c u t i o n
+I 2085 elastic_results
+I 2095 margin_results
+B 2107 Equation Listing    SOLVE two_type_base Using QCP From line 353
+D 2110 eq_obj_two
+B 2116 Column Listing      SOLVE two_type_base Using QCP From line 353
+E 2119 Q2
+E 2130 obj_two
+B 2138 Range Statistics    SOLVE two_type_base Using QCP From line 353
+B 2149 Model Statistics    SOLVE two_type_base Using QCP From line 353
+B 2163 Solution Report     SOLVE two_type_base Using QCP From line 353
+F 2209 eq_obj_two
+G 2211 Q2
+G 2220 obj_two
+B 2231 E x e c u t i o n
+I 2231 Q2
+I 2238 exports_two
+I 2239 price_two
+I 2240 mc_two
+I 2246 eq_gap_two
+I 2251 quantity_gap_two
+I 2252 price_gap_two
+B 2256 Equation Listing    SOLVE two_type_fee Using QCP From line 406
+D 2259 eq_obj_two_fee
+B 2265 Column Listing      SOLVE two_type_fee Using QCP From line 406
+E 2268 Q2
+E 2279 obj_two
+B 2287 Range Statistics    SOLVE two_type_fee Using QCP From line 406
+B 2298 Model Statistics    SOLVE two_type_fee Using QCP From line 406
+B 2312 Solution Report     SOLVE two_type_fee Using QCP From line 406
+F 2359 eq_obj_two_fee
+G 2361 Q2
+G 2370 obj_two
+B 2381 E x e c u t i o n
+I 2381 q_fee_two
+I 2388 exports_two_fee
+I 2389 price_two_fee
+I 2390 net_price_two_fee
+I 2391 dsi_revenue_two_fee
+I 2392 mc_fee_two
+I 2398 eq_gap_fee_two
+I 2402 exporter_surplus_two
+I 2407 export_change_two
+B 2415 Equation Listing    SOLVE two_type_fee Using QCP From line 492
+D 2418 eq_obj_two_fee
+B 2424 Column Listing      SOLVE two_type_fee Using QCP From line 492
+E 2427 Q2
+E 2438 obj_two
+B 2446 Range Statistics    SOLVE two_type_fee Using QCP From line 492
+B 2457 Model Statistics    SOLVE two_type_fee Using QCP From line 492
+B 2476 Solution Report     SOLVE two_type_fee Using QCP From line 492
+F 2522 eq_obj_two_fee
+G 2524 Q2
+G 2533 obj_two
+B 2544 Equation Listing    SOLVE two_type_fee Using QCP From line 492
+D 2547 eq_obj_two_fee
+B 2553 Column Listing      SOLVE two_type_fee Using QCP From line 492
+E 2556 Q2
+E 2567 obj_two
+B 2575 Range Statistics    SOLVE two_type_fee Using QCP From line 492
+B 2586 Model Statistics    SOLVE two_type_fee Using QCP From line 492
+B 2605 Solution Report     SOLVE two_type_fee Using QCP From line 492
+F 2652 eq_obj_two_fee
+G 2654 Q2
+G 2663 obj_two
+B 2674 Equation Listing    SOLVE two_type_fee Using QCP From line 492
+D 2677 eq_obj_two_fee
+B 2683 Column Listing      SOLVE two_type_fee Using QCP From line 492
+E 2686 Q2
+E 2697 obj_two
+B 2705 Range Statistics    SOLVE two_type_fee Using QCP From line 492
+B 2716 Model Statistics    SOLVE two_type_fee Using QCP From line 492
+B 2735 Solution Report     SOLVE two_type_fee Using QCP From line 492
+F 2782 eq_obj_two_fee
+G 2784 Q2
+G 2793 obj_two
+B 2804 Equation Listing    SOLVE two_type_fee Using QCP From line 492
+D 2807 eq_obj_two_fee
+B 2813 Column Listing      SOLVE two_type_fee Using QCP From line 492
+E 2816 Q2
+E 2827 obj_two
+B 2835 Range Statistics    SOLVE two_type_fee Using QCP From line 492
+B 2846 Model Statistics    SOLVE two_type_fee Using QCP From line 492
+B 2865 Solution Report     SOLVE two_type_fee Using QCP From line 492
+F 2912 eq_obj_two_fee
+G 2914 Q2
+G 2923 obj_two
+B 2934 Equation Listing    SOLVE two_type_fee Using QCP From line 492
+D 2937 eq_obj_two_fee
+B 2943 Column Listing      SOLVE two_type_fee Using QCP From line 492
+E 2946 Q2
+E 2957 obj_two
+B 2965 Range Statistics    SOLVE two_type_fee Using QCP From line 492
+B 2976 Model Statistics    SOLVE two_type_fee Using QCP From line 492
+B 2995 Solution Report     SOLVE two_type_fee Using QCP From line 492
+F 3042 eq_obj_two_fee
+G 3044 Q2
+G 3053 obj_two
+B 3064 Equation Listing    SOLVE two_type_fee Using QCP From line 492
+D 3067 eq_obj_two_fee
+B 3073 Column Listing      SOLVE two_type_fee Using QCP From line 492
+E 3076 Q2
+E 3087 obj_two
+B 3095 Range Statistics    SOLVE two_type_fee Using QCP From line 492
+B 3106 Model Statistics    SOLVE two_type_fee Using QCP From line 492
+B 3125 Solution Report     SOLVE two_type_fee Using QCP From line 492
+F 3172 eq_obj_two_fee
+G 3174 Q2
+G 3183 obj_two
+B 3194 Equation Listing    SOLVE two_type_fee Using QCP From line 492
+D 3197 eq_obj_two_fee
+B 3203 Column Listing      SOLVE two_type_fee Using QCP From line 492
+E 3206 Q2
+E 3217 obj_two
+B 3225 Range Statistics    SOLVE two_type_fee Using QCP From line 492
+B 3236 Model Statistics    SOLVE two_type_fee Using QCP From line 492
+B 3255 Solution Report     SOLVE two_type_fee Using QCP From line 492
+F 3302 eq_obj_two_fee
+G 3304 Q2
+G 3313 obj_two
+B 3324 Equation Listing    SOLVE two_type_fee Using QCP From line 492
+D 3327 eq_obj_two_fee
+B 3333 Column Listing      SOLVE two_type_fee Using QCP From line 492
+E 3336 Q2
+E 3347 obj_two
+B 3355 Range Statistics    SOLVE two_type_fee Using QCP From line 492
+B 3366 Model Statistics    SOLVE two_type_fee Using QCP From line 492
+B 3385 Solution Report     SOLVE two_type_fee Using QCP From line 492
+F 3432 eq_obj_two_fee
+G 3434 Q2
+G 3443 obj_two
+B 3454 Equation Listing    SOLVE two_type_fee Using QCP From line 492
+D 3457 eq_obj_two_fee
+B 3463 Column Listing      SOLVE two_type_fee Using QCP From line 492
+E 3466 Q2
+E 3477 obj_two
+B 3485 Range Statistics    SOLVE two_type_fee Using QCP From line 492
+B 3496 Model Statistics    SOLVE two_type_fee Using QCP From line 492
+B 3515 Solution Report     SOLVE two_type_fee Using QCP From line 492
+F 3562 eq_obj_two_fee
+G 3564 Q2
+G 3573 obj_two
+B 3584 Equation Listing    SOLVE two_type_fee Using QCP From line 492
+D 3587 eq_obj_two_fee
+B 3593 Column Listing      SOLVE two_type_fee Using QCP From line 492
+E 3596 Q2
+E 3607 obj_two
+B 3615 Range Statistics    SOLVE two_type_fee Using QCP From line 492
+B 3626 Model Statistics    SOLVE two_type_fee Using QCP From line 492
+B 3645 Solution Report     SOLVE two_type_fee Using QCP From line 492
+F 3692 eq_obj_two_fee
+G 3694 Q2
+G 3703 obj_two
+B 3714 Equation Listing    SOLVE two_type_fee Using QCP From line 492
+D 3717 eq_obj_two_fee
+B 3723 Column Listing      SOLVE two_type_fee Using QCP From line 492
+E 3726 Q2
+E 3737 obj_two
+B 3745 Range Statistics    SOLVE two_type_fee Using QCP From line 492
+B 3756 Model Statistics    SOLVE two_type_fee Using QCP From line 492
+B 3775 Solution Report     SOLVE two_type_fee Using QCP From line 492
+F 3822 eq_obj_two_fee
+G 3824 Q2
+G 3833 obj_two
+B 3844 Equation Listing    SOLVE two_type_fee Using QCP From line 492
+D 3847 eq_obj_two_fee
+B 3853 Column Listing      SOLVE two_type_fee Using QCP From line 492
+E 3856 Q2
+E 3867 obj_two
+B 3875 Range Statistics    SOLVE two_type_fee Using QCP From line 492
+B 3886 Model Statistics    SOLVE two_type_fee Using QCP From line 492
+B 3905 Solution Report     SOLVE two_type_fee Using QCP From line 492
+F 3952 eq_obj_two_fee
+G 3954 Q2
+G 3963 obj_two
+B 3974 Equation Listing    SOLVE two_type_fee Using QCP From line 492
+D 3977 eq_obj_two_fee
+B 3983 Column Listing      SOLVE two_type_fee Using QCP From line 492
+E 3986 Q2
+E 3997 obj_two
+B 4005 Range Statistics    SOLVE two_type_fee Using QCP From line 492
+B 4016 Model Statistics    SOLVE two_type_fee Using QCP From line 492
+B 4035 Solution Report     SOLVE two_type_fee Using QCP From line 492
+F 4082 eq_obj_two_fee
+G 4084 Q2
+G 4093 obj_two
+B 4104 Equation Listing    SOLVE two_type_fee Using QCP From line 492
+D 4107 eq_obj_two_fee
+B 4113 Column Listing      SOLVE two_type_fee Using QCP From line 492
+E 4116 Q2
+E 4127 obj_two
+B 4135 Range Statistics    SOLVE two_type_fee Using QCP From line 492
+B 4146 Model Statistics    SOLVE two_type_fee Using QCP From line 492
+B 4165 Solution Report     SOLVE two_type_fee Using QCP From line 492
+F 4212 eq_obj_two_fee
+G 4214 Q2
+G 4223 obj_two
+B 4234 E x e c u t i o n
+I 4234 results_two
+I 4255 exports_type
+I 4275 surplus_type
+I 4295 kkt_check
