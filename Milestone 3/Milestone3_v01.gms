@@ -53,7 +53,7 @@ display a, b, c, d;
 * Competitive market, where P = MC
 
 positive variable X "export quantity";
-variable social_surplus "total market surplus";
+variable social_surplus "total market surplus or equilibrium potential, not national welfare";
 
 equation eq_surplus;
 
