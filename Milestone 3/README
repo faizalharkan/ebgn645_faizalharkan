@@ -1,0 +1,7 @@
+### Data and Reproducibility
+The 2025 Indonesian ferronickel export data were obtained from World Bank WITS/UN Comtrade and entered directly into the GAMS code as scalar inputs. All calibration parameters and scenario assumptions are defined within `Milestone3_v01.gms`. Therefore, no external CSV files or additional datasets are required to reproduce the aggregate model results.
+
+To reproduce the results, run `Milestone3_v01.gms` in GAMS and review the generated `.lst` file. The fee and elasticity sensitivity outputs correspond to Tables 6.1 and 6.2 in the Milestone 3 report.
+
+### Exploratory Model and Data Limitations
+As mentioned in Section 8, an exploratory model with low-cost and high-cost ferronickel producer groups was developed using facility-level nickel cash-cost data from S&P Global Capital IQ Pro. However, this extension was not included in the main results because the marginal cost calibration and assumptions about nickel grades and producer market shares require further validation.
