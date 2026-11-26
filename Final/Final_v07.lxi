@@ -1,0 +1,681 @@
+B 3 C o m p i l a t i o n
+B 387 Include File Summary
+B 399 E x e c u t i o n
+I 401 vbar
+I 402 xbar
+I 403 pbar
+I 404 e_r
+I 405 e_s
+I 406 cash_cost
+I 412 a
+I 413 b
+I 414 c
+I 415 d
+B 419 Equation Listing    SOLVE market Using QCP From line 106
+D 422 objfn
+B 428 Column Listing      SOLVE market Using QCP From line 106
+E 431 X
+E 438 equilibrium_potential
+B 446 Range Statistics    SOLVE market Using QCP From line 106
+B 457 Model Statistics    SOLVE market Using QCP From line 106
+B 471 Solution Report     SOLVE market Using QCP From line 106
+F 517 objfn
+G 521 X
+G 522 equilibrium_potential
+B 534 E x e c u t i o n
+I 536 exports_base
+I 537 price_base
+B 541 Equation Listing    SOLVE market Using QCP From line 130
+D 544 objfn
+B 550 Column Listing      SOLVE market Using QCP From line 130
+E 553 X
+E 560 equilibrium_potential
+B 568 Range Statistics    SOLVE market Using QCP From line 130
+B 579 Model Statistics    SOLVE market Using QCP From line 130
+B 593 Solution Report     SOLVE market Using QCP From line 130
+F 640 objfn
+G 644 X
+G 645 equilibrium_potential
+B 657 E x e c u t i o n
+I 659 exports_fee
+I 660 price_fee
+I 661 net_price_fee
+I 662 dsi_revenue_fee
+I 663 change_cs
+I 664 change_ps
+I 665 change_ts
+I 666 deadweight_loss
+I 667 buyer_incidence
+I 668 exporter_incidence
+B 672 Equation Listing    SOLVE market Using QCP From line 196
+D 675 objfn
+B 681 Column Listing      SOLVE market Using QCP From line 196
+E 684 X
+E 691 equilibrium_potential
+B 699 Range Statistics    SOLVE market Using QCP From line 196
+B 710 Model Statistics    SOLVE market Using QCP From line 196
+B 733 Solution Report     SOLVE market Using QCP From line 196
+F 779 objfn
+G 783 X
+G 784 equilibrium_potential
+B 796 Equation Listing    SOLVE market Using QCP From line 196
+D 799 objfn
+B 805 Column Listing      SOLVE market Using QCP From line 196
+E 808 X
+E 815 equilibrium_potential
+B 823 Range Statistics    SOLVE market Using QCP From line 196
+B 834 Model Statistics    SOLVE market Using QCP From line 196
+B 857 Solution Report     SOLVE market Using QCP From line 196
+F 904 objfn
+G 908 X
+G 909 equilibrium_potential
+B 921 Equation Listing    SOLVE market Using QCP From line 196
+D 924 objfn
+B 930 Column Listing      SOLVE market Using QCP From line 196
+E 933 X
+E 940 equilibrium_potential
+B 948 Range Statistics    SOLVE market Using QCP From line 196
+B 959 Model Statistics    SOLVE market Using QCP From line 196
+B 982 Solution Report     SOLVE market Using QCP From line 196
+F 1029 objfn
+G 1033 X
+G 1034 equilibrium_potential
+B 1046 Equation Listing    SOLVE market Using QCP From line 196
+D 1049 objfn
+B 1055 Column Listing      SOLVE market Using QCP From line 196
+E 1058 X
+E 1065 equilibrium_potential
+B 1073 Range Statistics    SOLVE market Using QCP From line 196
+B 1084 Model Statistics    SOLVE market Using QCP From line 196
+B 1107 Solution Report     SOLVE market Using QCP From line 196
+F 1154 objfn
+G 1158 X
+G 1159 equilibrium_potential
+B 1171 Equation Listing    SOLVE market Using QCP From line 196
+D 1174 objfn
+B 1180 Column Listing      SOLVE market Using QCP From line 196
+E 1183 X
+E 1190 equilibrium_potential
+B 1198 Range Statistics    SOLVE market Using QCP From line 196
+B 1209 Model Statistics    SOLVE market Using QCP From line 196
+B 1232 Solution Report     SOLVE market Using QCP From line 196
+F 1279 objfn
+G 1283 X
+G 1284 equilibrium_potential
+B 1296 Equation Listing    SOLVE market Using QCP From line 196
+D 1299 objfn
+B 1305 Column Listing      SOLVE market Using QCP From line 196
+E 1308 X
+E 1315 equilibrium_potential
+B 1323 Range Statistics    SOLVE market Using QCP From line 196
+B 1334 Model Statistics    SOLVE market Using QCP From line 196
+B 1357 Solution Report     SOLVE market Using QCP From line 196
+F 1404 objfn
+G 1408 X
+G 1409 equilibrium_potential
+B 1421 Equation Listing    SOLVE market Using QCP From line 196
+D 1424 objfn
+B 1430 Column Listing      SOLVE market Using QCP From line 196
+E 1433 X
+E 1440 equilibrium_potential
+B 1448 Range Statistics    SOLVE market Using QCP From line 196
+B 1459 Model Statistics    SOLVE market Using QCP From line 196
+B 1482 Solution Report     SOLVE market Using QCP From line 196
+F 1528 objfn
+G 1532 X
+G 1533 equilibrium_potential
+B 1545 Equation Listing    SOLVE market Using QCP From line 196
+D 1548 objfn
+B 1554 Column Listing      SOLVE market Using QCP From line 196
+E 1557 X
+E 1564 equilibrium_potential
+B 1572 Range Statistics    SOLVE market Using QCP From line 196
+B 1583 Model Statistics    SOLVE market Using QCP From line 196
+B 1606 Solution Report     SOLVE market Using QCP From line 196
+F 1653 objfn
+G 1657 X
+G 1658 equilibrium_potential
+B 1670 Equation Listing    SOLVE market Using QCP From line 196
+D 1673 objfn
+B 1679 Column Listing      SOLVE market Using QCP From line 196
+E 1682 X
+E 1689 equilibrium_potential
+B 1697 Range Statistics    SOLVE market Using QCP From line 196
+B 1708 Model Statistics    SOLVE market Using QCP From line 196
+B 1731 Solution Report     SOLVE market Using QCP From line 196
+F 1778 objfn
+G 1782 X
+G 1783 equilibrium_potential
+B 1795 Equation Listing    SOLVE market Using QCP From line 196
+D 1798 objfn
+B 1804 Column Listing      SOLVE market Using QCP From line 196
+E 1807 X
+E 1814 equilibrium_potential
+B 1822 Range Statistics    SOLVE market Using QCP From line 196
+B 1833 Model Statistics    SOLVE market Using QCP From line 196
+B 1856 Solution Report     SOLVE market Using QCP From line 196
+F 1903 objfn
+G 1907 X
+G 1908 equilibrium_potential
+B 1920 Equation Listing    SOLVE market Using QCP From line 196
+D 1923 objfn
+B 1929 Column Listing      SOLVE market Using QCP From line 196
+E 1932 X
+E 1939 equilibrium_potential
+B 1947 Range Statistics    SOLVE market Using QCP From line 196
+B 1958 Model Statistics    SOLVE market Using QCP From line 196
+B 1981 Solution Report     SOLVE market Using QCP From line 196
+F 2028 objfn
+G 2032 X
+G 2033 equilibrium_potential
+B 2045 Equation Listing    SOLVE market Using QCP From line 196
+D 2048 objfn
+B 2054 Column Listing      SOLVE market Using QCP From line 196
+E 2057 X
+E 2064 equilibrium_potential
+B 2072 Range Statistics    SOLVE market Using QCP From line 196
+B 2083 Model Statistics    SOLVE market Using QCP From line 196
+B 2106 Solution Report     SOLVE market Using QCP From line 196
+F 2153 objfn
+G 2157 X
+G 2158 equilibrium_potential
+B 2170 Equation Listing    SOLVE market Using QCP From line 196
+D 2173 objfn
+B 2179 Column Listing      SOLVE market Using QCP From line 196
+E 2182 X
+E 2189 equilibrium_potential
+B 2197 Range Statistics    SOLVE market Using QCP From line 196
+B 2208 Model Statistics    SOLVE market Using QCP From line 196
+B 2231 Solution Report     SOLVE market Using QCP From line 196
+F 2277 objfn
+G 2281 X
+G 2282 equilibrium_potential
+B 2294 Equation Listing    SOLVE market Using QCP From line 196
+D 2297 objfn
+B 2303 Column Listing      SOLVE market Using QCP From line 196
+E 2306 X
+E 2313 equilibrium_potential
+B 2321 Range Statistics    SOLVE market Using QCP From line 196
+B 2332 Model Statistics    SOLVE market Using QCP From line 196
+B 2355 Solution Report     SOLVE market Using QCP From line 196
+F 2402 objfn
+G 2406 X
+G 2407 equilibrium_potential
+B 2419 Equation Listing    SOLVE market Using QCP From line 196
+D 2422 objfn
+B 2428 Column Listing      SOLVE market Using QCP From line 196
+E 2431 X
+E 2438 equilibrium_potential
+B 2446 Range Statistics    SOLVE market Using QCP From line 196
+B 2457 Model Statistics    SOLVE market Using QCP From line 196
+B 2480 Solution Report     SOLVE market Using QCP From line 196
+F 2527 objfn
+G 2531 X
+G 2532 equilibrium_potential
+B 2544 Equation Listing    SOLVE market Using QCP From line 196
+D 2547 objfn
+B 2553 Column Listing      SOLVE market Using QCP From line 196
+E 2556 X
+E 2563 equilibrium_potential
+B 2571 Range Statistics    SOLVE market Using QCP From line 196
+B 2582 Model Statistics    SOLVE market Using QCP From line 196
+B 2605 Solution Report     SOLVE market Using QCP From line 196
+F 2652 objfn
+G 2656 X
+G 2657 equilibrium_potential
+B 2669 Equation Listing    SOLVE market Using QCP From line 196
+D 2672 objfn
+B 2678 Column Listing      SOLVE market Using QCP From line 196
+E 2681 X
+E 2688 equilibrium_potential
+B 2696 Range Statistics    SOLVE market Using QCP From line 196
+B 2707 Model Statistics    SOLVE market Using QCP From line 196
+B 2730 Solution Report     SOLVE market Using QCP From line 196
+F 2777 objfn
+G 2781 X
+G 2782 equilibrium_potential
+B 2794 Equation Listing    SOLVE market Using QCP From line 196
+D 2797 objfn
+B 2803 Column Listing      SOLVE market Using QCP From line 196
+E 2806 X
+E 2813 equilibrium_potential
+B 2821 Range Statistics    SOLVE market Using QCP From line 196
+B 2832 Model Statistics    SOLVE market Using QCP From line 196
+B 2855 Solution Report     SOLVE market Using QCP From line 196
+F 2902 objfn
+G 2906 X
+G 2907 equilibrium_potential
+B 2919 Equation Listing    SOLVE market Using QCP From line 196
+D 2922 objfn
+B 2928 Column Listing      SOLVE market Using QCP From line 196
+E 2931 X
+E 2938 equilibrium_potential
+B 2946 Range Statistics    SOLVE market Using QCP From line 196
+B 2957 Model Statistics    SOLVE market Using QCP From line 196
+B 2980 Solution Report     SOLVE market Using QCP From line 196
+F 3026 objfn
+G 3030 X
+G 3031 equilibrium_potential
+B 3043 Equation Listing    SOLVE market Using QCP From line 196
+D 3046 objfn
+B 3052 Column Listing      SOLVE market Using QCP From line 196
+E 3055 X
+E 3062 equilibrium_potential
+B 3070 Range Statistics    SOLVE market Using QCP From line 196
+B 3081 Model Statistics    SOLVE market Using QCP From line 196
+B 3104 Solution Report     SOLVE market Using QCP From line 196
+F 3151 objfn
+G 3155 X
+G 3156 equilibrium_potential
+B 3168 Equation Listing    SOLVE market Using QCP From line 196
+D 3171 objfn
+B 3177 Column Listing      SOLVE market Using QCP From line 196
+E 3180 X
+E 3187 equilibrium_potential
+B 3195 Range Statistics    SOLVE market Using QCP From line 196
+B 3206 Model Statistics    SOLVE market Using QCP From line 196
+B 3229 Solution Report     SOLVE market Using QCP From line 196
+F 3276 objfn
+G 3280 X
+G 3281 equilibrium_potential
+B 3293 Equation Listing    SOLVE market Using QCP From line 196
+D 3296 objfn
+B 3302 Column Listing      SOLVE market Using QCP From line 196
+E 3305 X
+E 3312 equilibrium_potential
+B 3320 Range Statistics    SOLVE market Using QCP From line 196
+B 3331 Model Statistics    SOLVE market Using QCP From line 196
+B 3354 Solution Report     SOLVE market Using QCP From line 196
+F 3401 objfn
+G 3405 X
+G 3406 equilibrium_potential
+B 3418 Equation Listing    SOLVE market Using QCP From line 196
+D 3421 objfn
+B 3427 Column Listing      SOLVE market Using QCP From line 196
+E 3430 X
+E 3437 equilibrium_potential
+B 3445 Range Statistics    SOLVE market Using QCP From line 196
+B 3456 Model Statistics    SOLVE market Using QCP From line 196
+B 3479 Solution Report     SOLVE market Using QCP From line 196
+F 3526 objfn
+G 3530 X
+G 3531 equilibrium_potential
+B 3543 Equation Listing    SOLVE market Using QCP From line 196
+D 3546 objfn
+B 3552 Column Listing      SOLVE market Using QCP From line 196
+E 3555 X
+E 3562 equilibrium_potential
+B 3570 Range Statistics    SOLVE market Using QCP From line 196
+B 3581 Model Statistics    SOLVE market Using QCP From line 196
+B 3604 Solution Report     SOLVE market Using QCP From line 196
+F 3651 objfn
+G 3655 X
+G 3656 equilibrium_potential
+B 3668 Equation Listing    SOLVE market Using QCP From line 196
+D 3671 objfn
+B 3677 Column Listing      SOLVE market Using QCP From line 196
+E 3680 X
+E 3687 equilibrium_potential
+B 3695 Range Statistics    SOLVE market Using QCP From line 196
+B 3706 Model Statistics    SOLVE market Using QCP From line 196
+B 3729 Solution Report     SOLVE market Using QCP From line 196
+F 3775 objfn
+G 3779 X
+G 3780 equilibrium_potential
+B 3792 Equation Listing    SOLVE market Using QCP From line 196
+D 3795 objfn
+B 3801 Column Listing      SOLVE market Using QCP From line 196
+E 3804 X
+E 3811 equilibrium_potential
+B 3819 Range Statistics    SOLVE market Using QCP From line 196
+B 3830 Model Statistics    SOLVE market Using QCP From line 196
+B 3853 Solution Report     SOLVE market Using QCP From line 196
+F 3900 objfn
+G 3904 X
+G 3905 equilibrium_potential
+B 3917 Equation Listing    SOLVE market Using QCP From line 196
+D 3920 objfn
+B 3926 Column Listing      SOLVE market Using QCP From line 196
+E 3929 X
+E 3936 equilibrium_potential
+B 3944 Range Statistics    SOLVE market Using QCP From line 196
+B 3955 Model Statistics    SOLVE market Using QCP From line 196
+B 3978 Solution Report     SOLVE market Using QCP From line 196
+F 4025 objfn
+G 4029 X
+G 4030 equilibrium_potential
+B 4042 Equation Listing    SOLVE market Using QCP From line 196
+D 4045 objfn
+B 4051 Column Listing      SOLVE market Using QCP From line 196
+E 4054 X
+E 4061 equilibrium_potential
+B 4069 Range Statistics    SOLVE market Using QCP From line 196
+B 4080 Model Statistics    SOLVE market Using QCP From line 196
+B 4103 Solution Report     SOLVE market Using QCP From line 196
+F 4150 objfn
+G 4154 X
+G 4155 equilibrium_potential
+B 4167 Equation Listing    SOLVE market Using QCP From line 196
+D 4170 objfn
+B 4176 Column Listing      SOLVE market Using QCP From line 196
+E 4179 X
+E 4186 equilibrium_potential
+B 4194 Range Statistics    SOLVE market Using QCP From line 196
+B 4205 Model Statistics    SOLVE market Using QCP From line 196
+B 4228 Solution Report     SOLVE market Using QCP From line 196
+F 4275 objfn
+G 4279 X
+G 4280 equilibrium_potential
+B 4292 Equation Listing    SOLVE market Using QCP From line 196
+D 4295 objfn
+B 4301 Column Listing      SOLVE market Using QCP From line 196
+E 4304 X
+E 4311 equilibrium_potential
+B 4319 Range Statistics    SOLVE market Using QCP From line 196
+B 4330 Model Statistics    SOLVE market Using QCP From line 196
+B 4353 Solution Report     SOLVE market Using QCP From line 196
+F 4400 objfn
+G 4404 X
+G 4405 equilibrium_potential
+B 4417 Equation Listing    SOLVE market Using QCP From line 196
+D 4420 objfn
+B 4426 Column Listing      SOLVE market Using QCP From line 196
+E 4429 X
+E 4436 equilibrium_potential
+B 4444 Range Statistics    SOLVE market Using QCP From line 196
+B 4455 Model Statistics    SOLVE market Using QCP From line 196
+B 4478 Solution Report     SOLVE market Using QCP From line 196
+F 4524 objfn
+G 4528 X
+G 4529 equilibrium_potential
+B 4541 Equation Listing    SOLVE market Using QCP From line 196
+D 4544 objfn
+B 4550 Column Listing      SOLVE market Using QCP From line 196
+E 4553 X
+E 4560 equilibrium_potential
+B 4568 Range Statistics    SOLVE market Using QCP From line 196
+B 4579 Model Statistics    SOLVE market Using QCP From line 196
+B 4602 Solution Report     SOLVE market Using QCP From line 196
+F 4649 objfn
+G 4653 X
+G 4654 equilibrium_potential
+B 4666 Equation Listing    SOLVE market Using QCP From line 196
+D 4669 objfn
+B 4675 Column Listing      SOLVE market Using QCP From line 196
+E 4678 X
+E 4685 equilibrium_potential
+B 4693 Range Statistics    SOLVE market Using QCP From line 196
+B 4704 Model Statistics    SOLVE market Using QCP From line 196
+B 4727 Solution Report     SOLVE market Using QCP From line 196
+F 4774 objfn
+G 4778 X
+G 4779 equilibrium_potential
+B 4791 Equation Listing    SOLVE market Using QCP From line 196
+D 4794 objfn
+B 4800 Column Listing      SOLVE market Using QCP From line 196
+E 4803 X
+E 4810 equilibrium_potential
+B 4818 Range Statistics    SOLVE market Using QCP From line 196
+B 4829 Model Statistics    SOLVE market Using QCP From line 196
+B 4852 Solution Report     SOLVE market Using QCP From line 196
+F 4899 objfn
+G 4903 X
+G 4904 equilibrium_potential
+B 4916 Equation Listing    SOLVE market Using QCP From line 196
+D 4919 objfn
+B 4925 Column Listing      SOLVE market Using QCP From line 196
+E 4928 X
+E 4935 equilibrium_potential
+B 4943 Range Statistics    SOLVE market Using QCP From line 196
+B 4954 Model Statistics    SOLVE market Using QCP From line 196
+B 4977 Solution Report     SOLVE market Using QCP From line 196
+F 5024 objfn
+G 5028 X
+G 5029 equilibrium_potential
+B 5041 Equation Listing    SOLVE market Using QCP From line 196
+D 5044 objfn
+B 5050 Column Listing      SOLVE market Using QCP From line 196
+E 5053 X
+E 5060 equilibrium_potential
+B 5068 Range Statistics    SOLVE market Using QCP From line 196
+B 5079 Model Statistics    SOLVE market Using QCP From line 196
+B 5102 Solution Report     SOLVE market Using QCP From line 196
+F 5149 objfn
+G 5153 X
+G 5154 equilibrium_potential
+B 5166 Equation Listing    SOLVE market Using QCP From line 196
+D 5169 objfn
+B 5175 Column Listing      SOLVE market Using QCP From line 196
+E 5178 X
+E 5185 equilibrium_potential
+B 5193 Range Statistics    SOLVE market Using QCP From line 196
+B 5204 Model Statistics    SOLVE market Using QCP From line 196
+B 5227 Solution Report     SOLVE market Using QCP From line 196
+F 5273 objfn
+G 5277 X
+G 5278 equilibrium_potential
+B 5290 Equation Listing    SOLVE market Using QCP From line 196
+D 5293 objfn
+B 5299 Column Listing      SOLVE market Using QCP From line 196
+E 5302 X
+E 5309 equilibrium_potential
+B 5317 Range Statistics    SOLVE market Using QCP From line 196
+B 5328 Model Statistics    SOLVE market Using QCP From line 196
+B 5351 Solution Report     SOLVE market Using QCP From line 196
+F 5398 objfn
+G 5402 X
+G 5403 equilibrium_potential
+B 5415 Equation Listing    SOLVE market Using QCP From line 196
+D 5418 objfn
+B 5424 Column Listing      SOLVE market Using QCP From line 196
+E 5427 X
+E 5434 equilibrium_potential
+B 5442 Range Statistics    SOLVE market Using QCP From line 196
+B 5453 Model Statistics    SOLVE market Using QCP From line 196
+B 5476 Solution Report     SOLVE market Using QCP From line 196
+F 5523 objfn
+G 5527 X
+G 5528 equilibrium_potential
+B 5540 Equation Listing    SOLVE market Using QCP From line 196
+D 5543 objfn
+B 5549 Column Listing      SOLVE market Using QCP From line 196
+E 5552 X
+E 5559 equilibrium_potential
+B 5567 Range Statistics    SOLVE market Using QCP From line 196
+B 5578 Model Statistics    SOLVE market Using QCP From line 196
+B 5601 Solution Report     SOLVE market Using QCP From line 196
+F 5648 objfn
+G 5652 X
+G 5653 equilibrium_potential
+B 5665 Equation Listing    SOLVE market Using QCP From line 196
+D 5668 objfn
+B 5674 Column Listing      SOLVE market Using QCP From line 196
+E 5677 X
+E 5684 equilibrium_potential
+B 5692 Range Statistics    SOLVE market Using QCP From line 196
+B 5703 Model Statistics    SOLVE market Using QCP From line 196
+B 5726 Solution Report     SOLVE market Using QCP From line 196
+F 5773 objfn
+G 5777 X
+G 5778 equilibrium_potential
+B 5790 Equation Listing    SOLVE market Using QCP From line 196
+D 5793 objfn
+B 5799 Column Listing      SOLVE market Using QCP From line 196
+E 5802 X
+E 5809 equilibrium_potential
+B 5817 Range Statistics    SOLVE market Using QCP From line 196
+B 5828 Model Statistics    SOLVE market Using QCP From line 196
+B 5851 Solution Report     SOLVE market Using QCP From line 196
+F 5898 objfn
+G 5902 X
+G 5903 equilibrium_potential
+B 5915 Equation Listing    SOLVE market Using QCP From line 196
+D 5918 objfn
+B 5924 Column Listing      SOLVE market Using QCP From line 196
+E 5927 X
+E 5934 equilibrium_potential
+B 5942 Range Statistics    SOLVE market Using QCP From line 196
+B 5953 Model Statistics    SOLVE market Using QCP From line 196
+B 5976 Solution Report     SOLVE market Using QCP From line 196
+F 6022 objfn
+G 6026 X
+G 6027 equilibrium_potential
+B 6039 Equation Listing    SOLVE market Using QCP From line 196
+D 6042 objfn
+B 6048 Column Listing      SOLVE market Using QCP From line 196
+E 6051 X
+E 6058 equilibrium_potential
+B 6066 Range Statistics    SOLVE market Using QCP From line 196
+B 6077 Model Statistics    SOLVE market Using QCP From line 196
+B 6100 Solution Report     SOLVE market Using QCP From line 196
+F 6147 objfn
+G 6151 X
+G 6152 equilibrium_potential
+B 6164 Equation Listing    SOLVE market Using QCP From line 196
+D 6167 objfn
+B 6173 Column Listing      SOLVE market Using QCP From line 196
+E 6176 X
+E 6183 equilibrium_potential
+B 6191 Range Statistics    SOLVE market Using QCP From line 196
+B 6202 Model Statistics    SOLVE market Using QCP From line 196
+B 6225 Solution Report     SOLVE market Using QCP From line 196
+F 6272 objfn
+G 6276 X
+G 6277 equilibrium_potential
+B 6289 Equation Listing    SOLVE market Using QCP From line 196
+D 6292 objfn
+B 6298 Column Listing      SOLVE market Using QCP From line 196
+E 6301 X
+E 6308 equilibrium_potential
+B 6316 Range Statistics    SOLVE market Using QCP From line 196
+B 6327 Model Statistics    SOLVE market Using QCP From line 196
+B 6350 Solution Report     SOLVE market Using QCP From line 196
+F 6397 objfn
+G 6401 X
+G 6402 equilibrium_potential
+B 6414 Equation Listing    SOLVE market Using QCP From line 196
+D 6417 objfn
+B 6423 Column Listing      SOLVE market Using QCP From line 196
+E 6426 X
+E 6433 equilibrium_potential
+B 6441 Range Statistics    SOLVE market Using QCP From line 196
+B 6452 Model Statistics    SOLVE market Using QCP From line 196
+B 6475 Solution Report     SOLVE market Using QCP From line 196
+F 6522 objfn
+G 6526 X
+G 6527 equilibrium_potential
+B 6539 Equation Listing    SOLVE market Using QCP From line 196
+D 6542 objfn
+B 6548 Column Listing      SOLVE market Using QCP From line 196
+E 6551 X
+E 6558 equilibrium_potential
+B 6566 Range Statistics    SOLVE market Using QCP From line 196
+B 6577 Model Statistics    SOLVE market Using QCP From line 196
+B 6600 Solution Report     SOLVE market Using QCP From line 196
+F 6647 objfn
+G 6651 X
+G 6652 equilibrium_potential
+B 6664 Equation Listing    SOLVE market Using QCP From line 196
+D 6667 objfn
+B 6673 Column Listing      SOLVE market Using QCP From line 196
+E 6676 X
+E 6683 equilibrium_potential
+B 6691 Range Statistics    SOLVE market Using QCP From line 196
+B 6702 Model Statistics    SOLVE market Using QCP From line 196
+B 6725 Solution Report     SOLVE market Using QCP From line 196
+F 6771 objfn
+G 6775 X
+G 6776 equilibrium_potential
+B 6788 Equation Listing    SOLVE market Using QCP From line 196
+D 6791 objfn
+B 6797 Column Listing      SOLVE market Using QCP From line 196
+E 6800 X
+E 6807 equilibrium_potential
+B 6815 Range Statistics    SOLVE market Using QCP From line 196
+B 6826 Model Statistics    SOLVE market Using QCP From line 196
+B 6849 Solution Report     SOLVE market Using QCP From line 196
+F 6896 objfn
+G 6900 X
+G 6901 equilibrium_potential
+B 6913 Equation Listing    SOLVE market Using QCP From line 196
+D 6916 objfn
+B 6922 Column Listing      SOLVE market Using QCP From line 196
+E 6925 X
+E 6932 equilibrium_potential
+B 6940 Range Statistics    SOLVE market Using QCP From line 196
+B 6951 Model Statistics    SOLVE market Using QCP From line 196
+B 6974 Solution Report     SOLVE market Using QCP From line 196
+F 7021 objfn
+G 7025 X
+G 7026 equilibrium_potential
+B 7038 Equation Listing    SOLVE market Using QCP From line 196
+D 7041 objfn
+B 7047 Column Listing      SOLVE market Using QCP From line 196
+E 7050 X
+E 7057 equilibrium_potential
+B 7065 Range Statistics    SOLVE market Using QCP From line 196
+B 7076 Model Statistics    SOLVE market Using QCP From line 196
+B 7099 Solution Report     SOLVE market Using QCP From line 196
+F 7146 objfn
+G 7150 X
+G 7151 equilibrium_potential
+B 7163 Equation Listing    SOLVE market Using QCP From line 196
+D 7166 objfn
+B 7172 Column Listing      SOLVE market Using QCP From line 196
+E 7175 X
+E 7182 equilibrium_potential
+B 7190 Range Statistics    SOLVE market Using QCP From line 196
+B 7201 Model Statistics    SOLVE market Using QCP From line 196
+B 7224 Solution Report     SOLVE market Using QCP From line 196
+F 7271 objfn
+G 7275 X
+G 7276 equilibrium_potential
+B 7288 Equation Listing    SOLVE market Using QCP From line 196
+D 7291 objfn
+B 7297 Column Listing      SOLVE market Using QCP From line 196
+E 7300 X
+E 7307 equilibrium_potential
+B 7315 Range Statistics    SOLVE market Using QCP From line 196
+B 7326 Model Statistics    SOLVE market Using QCP From line 196
+B 7349 Solution Report     SOLVE market Using QCP From line 196
+F 7396 objfn
+G 7400 X
+G 7401 equilibrium_potential
+B 7413 Equation Listing    SOLVE market Using QCP From line 196
+D 7416 objfn
+B 7422 Column Listing      SOLVE market Using QCP From line 196
+E 7425 X
+E 7432 equilibrium_potential
+B 7440 Range Statistics    SOLVE market Using QCP From line 196
+B 7451 Model Statistics    SOLVE market Using QCP From line 196
+B 7474 Solution Report     SOLVE market Using QCP From line 196
+F 7521 objfn
+G 7525 X
+G 7526 equilibrium_potential
+B 7538 Equation Listing    SOLVE market Using QCP From line 196
+D 7541 objfn
+B 7547 Column Listing      SOLVE market Using QCP From line 196
+E 7550 X
+E 7557 equilibrium_potential
+B 7565 Range Statistics    SOLVE market Using QCP From line 196
+B 7576 Model Statistics    SOLVE market Using QCP From line 196
+B 7599 Solution Report     SOLVE market Using QCP From line 196
+F 7646 objfn
+G 7650 X
+G 7651 equilibrium_potential
+B 7663 Equation Listing    SOLVE market Using QCP From line 196
+D 7666 objfn
+B 7672 Column Listing      SOLVE market Using QCP From line 196
+E 7675 X
+E 7682 equilibrium_potential
+B 7690 Range Statistics    SOLVE market Using QCP From line 196
+B 7701 Model Statistics    SOLVE market Using QCP From line 196
+B 7724 Solution Report     SOLVE market Using QCP From line 196
+F 7771 objfn
+G 7775 X
+G 7776 equilibrium_potential
+B 7788 E x e c u t i o n
+I 7788 fee_results
+I 7801 elastic_results
+I 7819 margin_results
+I 7828 cash_main

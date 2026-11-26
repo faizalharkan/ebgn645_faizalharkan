@@ -1,0 +1,19 @@
+check,value
+market_cases, 2.10000000000000E+01
+positive_fee_cases, 1.80000000000000E+01
+margin_cases, 5.40000000000000E+01
+swf_cases, 2.70000000000000E+01
+max_quantity_residual, 1.77635683940025E-15
+max_equilibrium_residual, 2.27373675443232E-13
+max_welfare_residual, 1.68665081901054E-12
+max_DWL_residual, 3.83693077310454E-12
+max_incidence_residual, 0.00000000000000E+00
+max_profit_residual, 7.10542735760100E-15
+max_net_welfare_residual, 8.95283847057726E-13
+max_break_even_residual, 0.00000000000000E+00
+max_swf_FV_residual, 1.59161572810262E-12
+max_swf_PV_residual, 3.41060513164848E-13
+positive_domestic_cases, 1.20000000000000E+01
+negative_domestic_cases, 4.20000000000000E+01
+neutral_domestic_cases, 0.00000000000000E+00
+verification_passed, 1.00000000000000E+00

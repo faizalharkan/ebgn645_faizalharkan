@@ -1,0 +1,625 @@
+--- Job Final_v01.gms Start 11/24/26 11:43:11 54.3.1 61154be4 DAX-DAC arm 64bit/macOS
+--- Applying:
+    /Library/Frameworks/GAMS.framework/Versions/54/Resources/gmsprmun.txt
+--- GAMS Parameters defined
+    Input /Users/alharkan/Documents/GitHub/ebgn645_faizalharkan/Final/Final_v01.gms
+    PageSize 0
+    ScrDir /Users/alharkan/Documents/GitHub/ebgn645_faizalharkan/Final/225a/
+    SysDir /Library/Frameworks/GAMS.framework/Versions/54/Resources/
+    LogOption 3
+    AppendLog 1
+    ErrMsg 1
+    ErrorLog 99
+    IDE 1
+    LstTitleLeftAligned 1
+Licensee: Course License                                 G260809+0003Ac-GEN
+          Colorado School of Mines                                  DCE5587
+          225a/gamslice.dat
+          6867daef-6e07-447d
+          node:26743505 mem:16 cores:10 ipport:61476 v:2                   
+          Course license for use within the course and related course work
+          The time-limited license stops working on : Jan 06, 2027
+System information: 10 physical cores and 16 Gb physical memory detected
+GAMS 54.3.1   Copyright (C) 1987-2026 GAMS Development. All rights reserved
+--- Starting compilation
+--- Final_v01.gms(477) 3 Mb
+--- Starting execution: elapsed 0:00:00.007
+--- Final_v01.gms(71) 4 Mb
+--- Generating QCP model direct_selling
+--- Final_v01.gms(73) 6 Mb
+---   1 rows  2 columns  2 non-zeroes
+---   13 nl-code  1 nl-non-zeroes
+--- Range statistics (absolute non-zero finite values)
+--- RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+--- Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+--- Matrix    [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
+--- Final_v01.gms(73) 4 Mb
+--- Executing CONOPT (Solvelink=2): elapsed 0:00:00.010
+
+CONOPT 4         54.3.1 61154be4 Aug 21, 2026          DAC arm 64bit/macOS    
+
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+       0   0          1.2288800047E+04 (Input point)
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+                      0.0000000000E+00 (Full preprocessed model)
+                      0.0000000000E+00 (After scaling)
+ 
+ ** Feasible solution. Value of objective =    12288.8000475
+ 
+    Iter Phase   Ninf     Objective     RGmax      NSB   Step  InItr MX OK
+       1   4          1.2288800047E+04 0.0E+00       0
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+--- Reading solution for model direct_selling
+--- Executing after solve: elapsed 0:00:00.086
+--- Final_v01.gms(122) 4 Mb
+--- Generating QCP model with_dsi_fee
+--- Final_v01.gms(124) 6 Mb
+---   1 rows  2 columns  2 non-zeroes
+---   15 nl-code  1 nl-non-zeroes
+--- Range statistics (absolute non-zero finite values)
+--- RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+--- Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+--- Matrix    [min, max] : [ 1.000E+00, 5.000E+00]
+--- Final_v01.gms(124) 4 Mb
+--- Executing CONOPT (Solvelink=2): elapsed 0:00:00.087
+
+CONOPT 4         54.3.1 61154be4 Aug 21, 2026          DAC arm 64bit/macOS    
+
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+       0   0          5.7778000000E+01 (Input point)
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+                      0.0000000000E+00 (Full preprocessed model)
+                      0.0000000000E+00 (After scaling)
+ 
+ ** Feasible solution. Value of objective =    12231.0220475
+ 
+    Iter Phase   Ninf     Objective     RGmax      NSB   Step  InItr MX OK
+       1   4          1.2231089961E+04 5.0E+00       1 1.0E+00     1 F  T
+       2   4          1.2231089961E+04 1.1E-13       1
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+--- Reading solution for model with_dsi_fee
+--- Executing after solve: elapsed 0:00:00.101
+--- Final_v01.gms(264) 4 Mb
+--- Generating QCP model with_dsi_fee
+--- Final_v01.gms(269) 6 Mb
+--- LOOPS s = f0
+---   1 rows  2 columns  2 non-zeroes
+---   13 nl-code  1 nl-non-zeroes
+--- Range statistics (absolute non-zero finite values)
+--- RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+--- Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+--- Matrix    [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
+--- Final_v01.gms(269) 4 Mb
+--- Executing CONOPT (Solvelink=2): elapsed 0:00:00.102
+
+CONOPT 4         54.3.1 61154be4 Aug 21, 2026          DAC arm 64bit/macOS    
+
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+       0   0          5.7710086590E+01 (Input point)
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+                      0.0000000000E+00 (Full preprocessed model)
+                      0.0000000000E+00 (After scaling)
+ 
+ ** Feasible solution. Value of objective =    12288.8000475
+ 
+    Iter Phase   Ninf     Objective     RGmax      NSB   Step  InItr MX OK
+       1   4          1.2288800047E+04 0.0E+00       0
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+--- Reading solution for model with_dsi_fee
+--- Executing after solve: elapsed 0:00:00.116
+--- Final_v01.gms(264) 4 Mb
+--- Generating QCP model with_dsi_fee
+--- Final_v01.gms(269) 6 Mb
+--- LOOPS s = f0p5
+---   1 rows  2 columns  2 non-zeroes
+---   15 nl-code  1 nl-non-zeroes
+--- Range statistics (absolute non-zero finite values)
+--- RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+--- Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+--- Matrix    [min, max] : [ 5.000E-01, 1.000E+00]
+--- Final_v01.gms(269) 4 Mb
+--- Executing CONOPT (Solvelink=2): elapsed 0:00:00.116
+
+CONOPT 4         54.3.1 61154be4 Aug 21, 2026          DAC arm 64bit/macOS    
+
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+       0   0          5.7778000000E+00 (Input point)
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+                      0.0000000000E+00 (Full preprocessed model)
+                      0.0000000000E+00 (After scaling)
+ 
+ ** Feasible solution. Value of objective =    12283.0222475
+ 
+    Iter Phase   Ninf     Objective     RGmax      NSB   Step  InItr MX OK
+       1   4          1.2283022927E+04 5.0E-01       1 1.0E+00     1 F  T
+       2   4          1.2283022927E+04 1.1E-13       1
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+--- Reading solution for model with_dsi_fee
+--- Executing after solve: elapsed 0:00:00.129
+--- Final_v01.gms(264) 4 Mb
+--- Generating QCP model with_dsi_fee
+--- Final_v01.gms(269) 6 Mb
+--- LOOPS s = f1
+---   1 rows  2 columns  2 non-zeroes
+---   14 nl-code  1 nl-non-zeroes
+--- Range statistics (absolute non-zero finite values)
+--- RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+--- Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+--- Matrix    [min, max] : [ 1.000E+00, 1.000E+00]
+--- Final_v01.gms(269) 4 Mb
+--- Executing CONOPT (Solvelink=2): elapsed 0:00:00.130
+
+CONOPT 4         54.3.1 61154be4 Aug 21, 2026          DAC arm 64bit/macOS    
+
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+       0   0          5.7784791341E+00 (Input point)
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+                      0.0000000000E+00 (Full preprocessed model)
+                      0.0000000000E+00 (After scaling)
+ 
+ ** Feasible solution. Value of objective =    12277.2444475
+ 
+    Iter Phase   Ninf     Objective     RGmax      NSB   Step  InItr MX OK
+       1   4          1.2277247164E+04 1.0E+00       1 1.0E+00     1 F  T
+       2   4          1.2277247164E+04 2.3E-13       1
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+--- Reading solution for model with_dsi_fee
+--- Executing after solve: elapsed 0:00:00.142
+--- Final_v01.gms(264) 4 Mb
+--- Generating QCP model with_dsi_fee
+--- Final_v01.gms(269) 6 Mb
+--- LOOPS s = f3
+---   1 rows  2 columns  2 non-zeroes
+---   15 nl-code  1 nl-non-zeroes
+--- Range statistics (absolute non-zero finite values)
+--- RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+--- Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+--- Matrix    [min, max] : [ 1.000E+00, 3.000E+00]
+--- Final_v01.gms(269) 4 Mb
+--- Executing CONOPT (Solvelink=2): elapsed 0:00:00.142
+
+CONOPT 4         54.3.1 61154be4 Aug 21, 2026          DAC arm 64bit/macOS    
+
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+       0   0          2.3113916536E+01 (Input point)
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+                      0.0000000000E+00 (Full preprocessed model)
+                      0.0000000000E+00 (After scaling)
+ 
+ ** Feasible solution. Value of objective =    12254.1332475
+ 
+    Iter Phase   Ninf     Objective     RGmax      NSB   Step  InItr MX OK
+       1   4          1.2254157696E+04 3.0E+00       1 1.0E+00     1 F  T
+       2   4          1.2254157696E+04 0.0E+00       1
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+--- Reading solution for model with_dsi_fee
+--- Executing after solve: elapsed 0:00:00.155
+--- Final_v01.gms(264) 4 Mb
+--- Generating QCP model with_dsi_fee
+--- Final_v01.gms(269) 6 Mb
+--- LOOPS s = f5
+---   1 rows  2 columns  2 non-zeroes
+---   15 nl-code  1 nl-non-zeroes
+--- Range statistics (absolute non-zero finite values)
+--- RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+--- Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+--- Matrix    [min, max] : [ 1.000E+00, 5.000E+00]
+--- Final_v01.gms(269) 4 Mb
+--- Executing CONOPT (Solvelink=2): elapsed 0:00:00.156
+
+CONOPT 4         54.3.1 61154be4 Aug 21, 2026          DAC arm 64bit/macOS    
+
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+       0   0          2.3135648828E+01 (Input point)
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+                      0.0000000000E+00 (Full preprocessed model)
+                      0.0000000000E+00 (After scaling)
+ 
+ ** Feasible solution. Value of objective =    12231.0220475
+ 
+    Iter Phase   Ninf     Objective     RGmax      NSB   Step  InItr MX OK
+       1   4          1.2231089961E+04 5.0E+00       1 1.0E+00     1 F  T
+       2   4          1.2231089961E+04 1.1E-13       1
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+--- Reading solution for model with_dsi_fee
+--- Executing after solve: elapsed 0:00:00.169
+--- Final_v01.gms(264) 4 Mb
+--- Generating QCP model with_dsi_fee
+--- Final_v01.gms(269) 6 Mb
+--- LOOPS s = f7
+---   1 rows  2 columns  2 non-zeroes
+---   15 nl-code  1 nl-non-zeroes
+--- Range statistics (absolute non-zero finite values)
+--- RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+--- Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+--- Matrix    [min, max] : [ 1.000E+00, 7.000E+00]
+--- Final_v01.gms(269) 4 Mb
+--- Executing CONOPT (Solvelink=2): elapsed 0:00:00.169
+
+CONOPT 4         54.3.1 61154be4 Aug 21, 2026          DAC arm 64bit/macOS    
+
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+       0   0          2.3179113410E+01 (Input point)
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+                      0.0000000000E+00 (Full preprocessed model)
+                      0.0000000000E+00 (After scaling)
+ 
+ ** Feasible solution. Value of objective =    12207.9108475
+ 
+    Iter Phase   Ninf     Objective     RGmax      NSB   Step  InItr MX OK
+       1   4          1.2208043958E+04 7.0E+00       1 1.0E+00     1 F  T
+       2   4          1.2208043958E+04 1.1E-13       1
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+--- Reading solution for model with_dsi_fee
+--- Executing after solve: elapsed 0:00:00.181
+--- Final_v01.gms(264) 4 Mb
+--- Generating QCP model with_dsi_fee
+--- Final_v01.gms(269) 6 Mb
+--- LOOPS s = f9
+---   1 rows  2 columns  2 non-zeroes
+---   15 nl-code  1 nl-non-zeroes
+--- Range statistics (absolute non-zero finite values)
+--- RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+--- Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+--- Matrix    [min, max] : [ 1.000E+00, 9.000E+00]
+--- Final_v01.gms(269) 4 Mb
+--- Executing CONOPT (Solvelink=2): elapsed 0:00:00.181
+
+CONOPT 4         54.3.1 61154be4 Aug 21, 2026          DAC arm 64bit/macOS    
+
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+       0   0          2.3244310284E+01 (Input point)
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+                      0.0000000000E+00 (Full preprocessed model)
+                      0.0000000000E+00 (After scaling)
+ 
+ ** Feasible solution. Value of objective =    12184.7996475
+ 
+    Iter Phase   Ninf     Objective     RGmax      NSB   Step  InItr MX OK
+       1   4          1.2185019687E+04 9.0E+00       1 1.0E+00     1 F  T
+       2   4          1.2185019687E+04 0.0E+00       1
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+--- Reading solution for model with_dsi_fee
+--- Executing after solve: elapsed 0:00:00.193
+--- Final_v01.gms(353) 4 Mb
+--- Generating QCP model with_dsi_fee
+--- Final_v01.gms(382) 6 Mb
+--- LOOPS t = e1
+---   1 rows  2 columns  2 non-zeroes
+---   15 nl-code  1 nl-non-zeroes
+--- Range statistics (absolute non-zero finite values)
+--- RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+--- Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+--- Matrix    [min, max] : [ 1.000E+00, 5.000E+00]
+--- Final_v01.gms(382) 4 Mb
+--- Executing CONOPT (Solvelink=2): elapsed 0:00:00.194
+
+CONOPT 4         54.3.1 61154be4 Aug 21, 2026          DAC arm 64bit/macOS    
+
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+       0   0          4.1422690431E+03 (Input point)
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+                      0.0000000000E+00 (Full preprocessed model)
+                      0.0000000000E+00 (After scaling)
+ 
+ ** Feasible solution. Value of objective =    16327.2887300
+ 
+    Iter Phase   Ninf     Objective     RGmax      NSB   Step  InItr MX OK
+       1   4          1.6327339665E+04 5.0E+00       1 1.0E+00     1 F  T
+       2   4          1.6327339665E+04 0.0E+00       1
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+--- Reading solution for model with_dsi_fee
+--- Executing after solve: elapsed 0:00:00.207
+--- Final_v01.gms(353) 4 Mb
+--- Generating QCP model with_dsi_fee
+--- Final_v01.gms(382) 6 Mb
+--- LOOPS t = e2
+---   1 rows  2 columns  2 non-zeroes
+---   15 nl-code  1 nl-non-zeroes
+--- Range statistics (absolute non-zero finite values)
+--- RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+--- Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+--- Matrix    [min, max] : [ 1.000E+00, 5.000E+00]
+--- Final_v01.gms(382) 4 Mb
+--- Executing CONOPT (Solvelink=2): elapsed 0:00:00.208
+
+CONOPT 4         54.3.1 61154be4 Aug 21, 2026          DAC arm 64bit/macOS    
+
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+       0   0          4.0963176176E+03 (Input point)
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+                      0.0000000000E+00 (Full preprocessed model)
+                      0.0000000000E+00 (After scaling)
+ 
+ ** Feasible solution. Value of objective =    12231.0220475
+ 
+    Iter Phase   Ninf     Objective     RGmax      NSB   Step  InItr MX OK
+       1   4          1.2231089961E+04 5.0E+00       1 1.0E+00     1 F  T
+       2   4          1.2231089961E+04 1.1E-13       1
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+--- Reading solution for model with_dsi_fee
+--- Executing after solve: elapsed 0:00:00.220
+--- Final_v01.gms(353) 4 Mb
+--- Generating QCP model with_dsi_fee
+--- Final_v01.gms(382) 6 Mb
+--- LOOPS t = e4
+---   1 rows  2 columns  2 non-zeroes
+---   15 nl-code  1 nl-non-zeroes
+--- Range statistics (absolute non-zero finite values)
+--- RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+--- Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+--- Matrix    [min, max] : [ 1.000E+00, 5.000E+00]
+--- Final_v01.gms(382) 4 Mb
+--- Executing CONOPT (Solvelink=2): elapsed 0:00:00.221
+
+CONOPT 4         54.3.1 61154be4 Aug 21, 2026          DAC arm 64bit/macOS    
+
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+       0   0          2.0482012547E+03 (Input point)
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+                      0.0000000000E+00 (Full preprocessed model)
+                      0.0000000000E+00 (After scaling)
+ 
+ ** Feasible solution. Value of objective =    10182.8887062
+ 
+    Iter Phase   Ninf     Objective     RGmax      NSB   Step  InItr MX OK
+       1   4          1.0182970202E+04 5.0E+00       1 1.0E+00     1 F  T
+       2   4          1.0182970202E+04 0.0E+00       1
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+--- Reading solution for model with_dsi_fee
+--- Executing after solve: elapsed 0:00:00.233
+--- Final_v01.gms(475) 4 Mb
+*** Status: Normal completion
+--- Job Final_v01.gms Stop 11/24/26 11:43:12 elapsed 0:00:00.234

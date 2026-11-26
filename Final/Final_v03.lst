@@ -1,0 +1,3973 @@
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 1
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+   1  ** Final Project - DSI export fee on Indonesian Ferronickel
+   2  ** Phase 3 - Phase 2 market model plus sovereign wealth accumulation
+   3  ** Retains the verified Phase 1 equilibrium and welfare formulation
+   4  ** Market assumption: 1 commodity, 1 period, competitive exporters
+   5  ** Using 2025 export data; elasticities and fees are assumed
+   6  ** X = exports (million metric tons); P = USD per ton of product
+   7  ** Revenue, cost, surplus, and profit are in million USD
+   8  ** CS refers to surplus under foreign residual demand.
+   9  ** Gross total surplus excludes real DSI operating costs and governance benefits.
+  10  ** Operating margins are illustrative assumptions, not actual DSI margins.
+  11   
+  12  option decimals = 6;
+  13   
+  14  * ----------------------------------------
+  15  ** 1. Input Values and Elasticities
+  16  * ----------------------------------------
+  17   
+  18  scalar
+  19     vbar "2025 export value [million USD]" /16385.06673/
+  20     xbar "2025 export quantity [million tons]" /11.5556/
+  21     pbar "average export price [USD/ton]"
+  22     e_r  "residual demand elasticity [unitless]" /-2/
+  23     e_s  "supply elasticity [unitless]" /1/;
+  24   
+  25  * Average price from 2025 export data
+  26  pbar = vbar / xbar;
+  27   
+  28  display vbar, xbar, pbar, e_r, e_s;
+  29   
+  30  * ----------------------------------------
+  31  ** 2. Determine Inverse Residual Demand and Marginal Cost
+  32  * ----------------------------------------
+  33   
+  34  * P(X) = a + bX
+  35  * MC(X) = c + dX
+  36   
+  37  scalar
+  38     a "demand intercept"
+  39     b "demand slope"
+  40     c "marginal cost intercept"
+  41     d "marginal cost slope";
+  42   
+  43  * Calibrate using price, quantity, and elasticities
+  44  b = pbar / (e_r * xbar);
+  45  a = pbar - b * xbar;
+  46   
+  47  d = pbar / (e_s * xbar);
+  48  c = pbar - d * xbar;
+  49   
+  50  display a, b, c, d;
+  51   
+  52  * ----------------------------------------
+  53  ** 3. Direct Selling - No Fee
+  54  * ----------------------------------------
+  55   
+  56  * Competitive market, where P = MC
+  57   
+  58  positive variable X "export quantity";
+  59  variable equilibrium_potential "equilibrium potential, not national welfare";
+  60   
+  61  equation eq_surplus;
+  62   
+  63  eq_surplus..
+  64     equilibrium_potential =e=
+  65       a*X + 0.5*b*sqr(X)
+  66     - c*X - 0.5*d*sqr(X);
+  67   
+  68  model direct_selling /eq_surplus/;
+  69   
+  70  X.l = xbar;
+  71   
+  72  solve direct_selling using qcp maximizing equilibrium_potential;
+  73   
+  74  abort$(direct_selling.solvestat ne 1 or
+  75        (direct_selling.modelstat ne 1 and direct_selling.modelstat ne 2))
+  76     "No-fee solve did not terminate at an optimum";
+  77   
+  78  * Calculate baseline price, exporter surplus, and welfare
+  79  scalar
+  80     exports_base "baseline export quantity [Mt]"
+  81     price_base "baseline buyer and exporter price [USD/ton]"
+  82     exporter_surplus_base "baseline producer surplus [million USD]"
+  83     consumer_surplus_base "baseline residual buyer surplus [million USD]"
+  84     total_surplus_base "baseline modeled market surplus [million USD]";
+  85   
+  86  exports_base = X.l;
+  87  price_base = a + b*exports_base;
+  88   
+  89  exporter_surplus_base = price_base*exports_base
+  90                        - (c*exports_base + 0.5*d*sqr(exports_base));
+  91   
+  92  * Phase 1: consumer surplus and total surplus
+  93  consumer_surplus_base = -0.5*b*sqr(exports_base);
+  94   
+  95  total_surplus_base = consumer_surplus_base + exporter_surplus_base;
+  96   
+  97  display exports_base, price_base, exporter_surplus_base,
+  98          consumer_surplus_base, total_surplus_base;
+  99   
+ 100  * ----------------------------------------
+ 101  ** 4. Direct Selling - With DSI Fee
+ 102  * ----------------------------------------
+ 103   
+ 104  * Exporters pay a hypothetical fee to DSI for monitoring and verification.
+ 105  * DSI revenue is not the same as DSI profit.
+ 106  * The fee is deducted in the equilibrium potential to obtain P - fee = MC.
+ 107  * It is added back in total surplus because it is a transfer before costs.
+ 108   
+ 109  scalar fee "DSI fee [USD/ton]" /5/;
+ 110   
+ 111  equation eq_fee;
+ 112   
+ 113  eq_fee..
+ 114     equilibrium_potential =e=
+ 115       a*X + 0.5*b*sqr(X)
+ 116     - c*X - 0.5*d*sqr(X)
+ 117     - fee*X;
+ 118   
+ 119  model with_dsi_fee /eq_fee/;
+ 120   
+ 121  X.l = xbar;
+ 122   
+ 123  solve with_dsi_fee using qcp maximizing equilibrium_potential;
+ 124   
+ 125  abort$(with_dsi_fee.solvestat ne 1 or
+ 126        (with_dsi_fee.modelstat ne 1 and with_dsi_fee.modelstat ne 2))
+ 127     "Main fee solve did not terminate at an optimum";
+ 128   
+ 129  scalar
+ 130     exports_fee "export quantity with fee [Mt]"
+ 131     price_fee "foreign buyer price [USD/ton]"
+ 132     net_price_fee "net exporter price [USD/ton]"
+ 133     exporter_surplus_fee "producer surplus [million USD]"
+ 134     dsi_revenue_fee "DSI gross revenue [million USD]"
+ 135     consumer_surplus_fee "residual buyer surplus [million USD]"
+ 136     total_surplus_fee "modeled market surplus before DSI costs [million USD]"
+ 137     change_cs "change in consumer surplus [million USD]"
+ 138     change_ps "change in producer surplus [million USD]"
+ 139     change_ts "change in total surplus [million USD]"
+ 140     deadweight_loss "loss in total surplus before DSI costs [million USD]"
+ 141     buyer_incidence "buyer share of per-ton fee [percent]"
+ 142     exporter_incidence "exporter share of per-ton fee [percent]"
+ 143     check_eq "fee-adjusted equilibrium residual [USD/ton]";
+ 144   
+ 145  exports_fee = X.l;
+ 146  price_fee = a + b*exports_fee;
+ 147  net_price_fee = price_fee - fee;
+ 148   
+ 149  exporter_surplus_fee = net_price_fee*exports_fee
+ 150                      - (c*exports_fee + 0.5*d*sqr(exports_fee));
+ 151   
+ 152  dsi_revenue_fee = fee*exports_fee;
+ 153   
+ 154  * Phase 1: welfare with DSI fee
+ 155  consumer_surplus_fee = -0.5*b*sqr(exports_fee);
+ 156   
+ 157  total_surplus_fee = consumer_surplus_fee
+ 158                   + exporter_surplus_fee
+ 159                   + dsi_revenue_fee;
+ 160   
+ 161  change_cs = consumer_surplus_fee - consumer_surplus_base;
+ 162  change_ps = exporter_surplus_fee - exporter_surplus_base;
+ 163  change_ts = total_surplus_fee - total_surplus_base;
+ 164   
+ 165  deadweight_loss = total_surplus_base - total_surplus_fee;
+ 166   
+ 167  * Phase 1: fee incidence (undefined at zero fee)
+ 168  buyer_incidence = NA;
+ 169  exporter_incidence = NA;
+ 170   
+ 171  if(fee > 0,
+ 172     buyer_incidence = 100*(price_fee - price_base)/fee;
+ 173     exporter_incidence = 100*(price_base - net_price_fee)/fee;
+ 174  );
+ 175   
+ 176  * Check if P - fee = MC (interior solution)
+ 177  check_eq = net_price_fee - (c + d*exports_fee);
+ 178   
+ 179  display exports_fee, price_fee, net_price_fee,
+ 180          exporter_surplus_fee, dsi_revenue_fee, check_eq,
+ 181          consumer_surplus_fee, total_surplus_fee,
+ 182          change_cs, change_ps, change_ts, deadweight_loss,
+ 183          buyer_incidence, exporter_incidence;
+ 184   
+ 185  * Phase 1: preserve the main comparison before subsequent loops
+ 186  parameter main_results(*,*) "baseline and main policy scenario";
+ 187   
+ 188  main_results("no_fee","fee_USD_t") = 0;
+ 189  main_results("no_fee","exports_Mt") = exports_base;
+ 190  main_results("no_fee","buyer_price_USD_t") = price_base;
+ 191  main_results("no_fee","net_price_USD_t") = price_base;
+ 192  main_results("no_fee","consumer_surplus_USDm") = consumer_surplus_base;
+ 193  main_results("no_fee","exporter_surplus_USDm") = exporter_surplus_base;
+ 194  main_results("no_fee","dsi_revenue_USDm") = 0;
+ 195  main_results("no_fee","total_surplus_USDm") = total_surplus_base;
+ 196  main_results("no_fee","DWL_USDm") = 0;
+ 197  main_results("no_fee","buyer_incidence_pct") = NA;
+ 198  main_results("no_fee","exporter_incidence_pct") = NA;
+ 199   
+ 200  main_results("with_fee","fee_USD_t") = fee;
+ 201  main_results("with_fee","exports_Mt") = exports_fee;
+ 202  main_results("with_fee","buyer_price_USD_t") = price_fee;
+ 203  main_results("with_fee","net_price_USD_t") = net_price_fee;
+ 204  main_results("with_fee","consumer_surplus_USDm") = consumer_surplus_fee;
+ 205  main_results("with_fee","exporter_surplus_USDm") = exporter_surplus_fee;
+ 206  main_results("with_fee","dsi_revenue_USDm") = dsi_revenue_fee;
+ 207  main_results("with_fee","total_surplus_USDm") = total_surplus_fee;
+ 208  main_results("with_fee","DWL_USDm") = deadweight_loss;
+ 209  main_results("with_fee","buyer_incidence_pct") = buyer_incidence;
+ 210  main_results("with_fee","exporter_incidence_pct") = exporter_incidence;
+ 211   
+ 212  display main_results;
+ 213   
+ 214  * Phase 1: verify the main policy scenario against analytical solutions.
+ 215  * Checks should be close to zero. Triangle DWL is valid for this linear,
+ 216  * interior equilibrium. No rounding is applied to stored results.
+ 217  scalar
+ 218     exports_analytical
+ 219     dwl_analytical
+ 220     check_base_quantity
+ 221     check_base_price
+ 222     check_base_eq
+ 223     check_quantity
+ 224     check_welfare
+ 225     check_dwl
+ 226     check_incidence;
+ 227   
+ 228  exports_analytical = (a - c - fee)/(d - b);
+ 229  dwl_analytical = 0.5*fee*(exports_base - exports_fee);
+ 230   
+ 231  check_base_quantity = exports_base - xbar;
+ 232  check_base_price = price_base - pbar;
+ 233  check_base_eq = price_base - (c + d*exports_base);
+ 234  check_quantity = exports_fee - exports_analytical;
+ 235  check_welfare = change_cs + change_ps + dsi_revenue_fee - change_ts;
+ 236  check_dwl = deadweight_loss - dwl_analytical;
+ 237  check_incidence = buyer_incidence + exporter_incidence - 100;
+ 238   
+ 239  display exports_analytical, dwl_analytical,
+ 240          check_base_quantity, check_base_price, check_base_eq,
+ 241          check_quantity, check_eq, check_welfare, check_dwl,
+ 242          check_incidence;
+ 243   
+ 244  * ----------------------------------------
+ 245  ** 5. Full Fee and Demand Elasticity Scenario Matrix
+ 246  * ----------------------------------------
+ 247   
+ 248  * Solve all seven fee levels for each of three demand elasticities.
+ 249  * Each elasticity has its own no-fee welfare benchmark.
+ 250  * The supply elasticity remains unchanged.
+ 251   
+ 252  set s "fee scenarios" /f0, f0p5, f1, f3, f5, f7, f9/;
+ 253  set t "elasticity scenarios" /e1, e2, e4/;
+ 254  set positive_fee(s) "positive fee scenarios";
+ 255   
+ 256  parameter fee_value(s) "DSI fee [USD/ton]"
+ 257     /f0 0, f0p5 0.5, f1 1, f3 3, f5 5, f7 7, f9 9/;
+ 258   
+ 259  parameter elastic_value(t) "residual demand elasticity"
+ 260     /e1 -1, e2 -2, e4 -4/;
+ 261   
+ 262  positive_fee(s) = yes$(fee_value(s) > 0);
+ 263   
+ 264  set metric "market and welfare results"
+ 265     /fee_USD_t, elasticity, exports_Mt, buyer_price_USD_t,
+ 266      net_price_USD_t, consumer_surplus_USDm, exporter_surplus_USDm,
+ 267      dsi_revenue_USDm, total_surplus_USDm, DWL_USDm,
+ 268      export_change_pct, buyer_price_change, exporter_net_price_change,
+ 269      change_CS_USDm, change_PS_USDm, change_TS_USDm,
+ 270      buyer_incidence_pct, exporter_incidence_pct/;
+ 271   
+ 272  parameter
+ 273     scenario_results(t,s,metric) "all 21 market equilibrium combinations"
+ 274     elastic_baseline(t,*) "analytical no-fee benchmark by elasticity"
+ 275     scenario_checks(t,s,*) "basic numerical consistency checks";
+ 276   
+ 277  scalar
+ 278     exports_base_elastic
+ 279     price_base_elastic
+ 280     consumer_surplus_base_elastic
+ 281     exporter_surplus_base_elastic
+ 282     total_surplus_base_elastic
+ 283     tol_quantity /0.000001/
+ 284     tol_money /0.0001/
+ 285     tol_price /0.0001/
+ 286     tol_pct /0.001/;
+ 287   
+ 288  loop(t,
+ 289   
+ 290     e_r = elastic_value(t);
+ 291   
+ 292  *  Recalibrate inverse residual demand to the same observed benchmark.
+ 293     b = pbar / (e_r*xbar);
+ 294     a = pbar - b*xbar;
+ 295   
+ 296  *  Analytical no-fee benchmark for this elasticity.
+ 297  *  The numerical no-fee case is also solved in the inner loop.
+ 298     exports_base_elastic = (a - c)/(d - b);
+ 299     price_base_elastic = a + b*exports_base_elastic;
+ 300     consumer_surplus_base_elastic = -0.5*b*sqr(exports_base_elastic);
+ 301     exporter_surplus_base_elastic = price_base_elastic*exports_base_elastic
+ 302                    - (c*exports_base_elastic + 0.5*d*sqr(exports_base_elastic));
+ 303     total_surplus_base_elastic = consumer_surplus_base_elastic
+ 304                               + exporter_surplus_base_elastic;
+ 305   
+ 306     elastic_baseline(t,"elasticity") = e_r;
+ 307     elastic_baseline(t,"exports_Mt") = exports_base_elastic;
+ 308     elastic_baseline(t,"price_USD_t") = price_base_elastic;
+ 309     elastic_baseline(t,"consumer_surplus_USDm") = consumer_surplus_base_elastic;
+ 310     elastic_baseline(t,"exporter_surplus_USDm") = exporter_surplus_base_elastic;
+ 311     elastic_baseline(t,"total_surplus_USDm") = total_surplus_base_elastic;
+ 312   
+ 313     loop(s,
+ 314   
+ 315        fee = fee_value(s);
+ 316        X.l = xbar;
+ 317   
+ 318        solve with_dsi_fee using qcp maximizing equilibrium_potential;
+ 319   
+ 320        abort$(with_dsi_fee.solvestat ne 1 or
+ 321              (with_dsi_fee.modelstat ne 1 and with_dsi_fee.modelstat ne 2))
+ 322           "Scenario solve did not terminate at an optimum", t, s;
+ 323   
+ 324  *     All fee and elasticity assumptions here imply an interior solution.
+ 325        abort$(X.l <= 0) "Interior solution required for welfare formulas", t, s;
+ 326   
+ 327  *     Market outcomes
+ 328        price_fee = a + b*X.l;
+ 329        net_price_fee = price_fee - fee;
+ 330        exporter_surplus_fee = net_price_fee*X.l
+ 331                             - (c*X.l + 0.5*d*sqr(X.l));
+ 332        dsi_revenue_fee = fee*X.l;
+ 333   
+ 334  *     Welfare before DSI operating costs
+ 335        consumer_surplus_fee = -0.5*b*sqr(X.l);
+ 336        total_surplus_fee = consumer_surplus_fee
+ 337                          + exporter_surplus_fee + dsi_revenue_fee;
+ 338   
+ 339        change_cs = consumer_surplus_fee - consumer_surplus_base_elastic;
+ 340        change_ps = exporter_surplus_fee - exporter_surplus_base_elastic;
+ 341        change_ts = total_surplus_fee - total_surplus_base_elastic;
+ 342        deadweight_loss = -change_ts;
+ 343   
+ 344        scenario_results(t,s,"fee_USD_t") = fee;
+ 345        scenario_results(t,s,"elasticity") = e_r;
+ 346        scenario_results(t,s,"exports_Mt") = X.l;
+ 347        scenario_results(t,s,"buyer_price_USD_t") = price_fee;
+ 348        scenario_results(t,s,"net_price_USD_t") = net_price_fee;
+ 349        scenario_results(t,s,"consumer_surplus_USDm") = consumer_surplus_fee;
+ 350        scenario_results(t,s,"exporter_surplus_USDm") = exporter_surplus_fee;
+ 351        scenario_results(t,s,"dsi_revenue_USDm") = dsi_revenue_fee;
+ 352        scenario_results(t,s,"total_surplus_USDm") = total_surplus_fee;
+ 353        scenario_results(t,s,"DWL_USDm") = deadweight_loss;
+ 354        scenario_results(t,s,"export_change_pct") = 100*(X.l/exports_base_elastic - 1);
+ 355        scenario_results(t,s,"buyer_price_change") = price_fee - price_base_elastic;
+ 356        scenario_results(t,s,"exporter_net_price_change") = net_price_fee - price_base_elastic;
+ 357        scenario_results(t,s,"change_CS_USDm") = change_cs;
+ 358        scenario_results(t,s,"change_PS_USDm") = change_ps;
+ 359        scenario_results(t,s,"change_TS_USDm") = change_ts;
+ 360   
+ 361  *     Fee incidence is undefined when fee = 0.
+ 362        scenario_results(t,s,"buyer_incidence_pct") = NA;
+ 363        scenario_results(t,s,"exporter_incidence_pct") = NA;
+ 364   
+ 365        if(fee > 0,
+ 366           scenario_results(t,s,"buyer_incidence_pct") =
+ 367              100*(price_fee - price_base_elastic)/fee;
+ 368           scenario_results(t,s,"exporter_incidence_pct") =
+ 369              100*(price_base_elastic - net_price_fee)/fee;
+ 370        );
+ 371   
+ 372  *     Basic checks for every equilibrium in the matrix.
+ 373        scenario_checks(t,s,"solver_status") = with_dsi_fee.solvestat;
+ 374        scenario_checks(t,s,"model_status") = with_dsi_fee.modelstat;
+ 375        scenario_checks(t,s,"quantity_residual") = X.l - (a-c-fee)/(d-b);
+ 376        scenario_checks(t,s,"equilibrium_residual") = net_price_fee - (c+d*X.l);
+ 377        scenario_checks(t,s,"welfare_residual") = change_cs + change_ps
+ 378                                               + dsi_revenue_fee - change_ts;
+ 379        scenario_checks(t,s,"DWL_residual") = deadweight_loss
+ 380                                           - 0.5*fee*(exports_base_elastic-X.l);
+ 381        scenario_checks(t,s,"incidence_residual") = NA;
+ 382   
+ 383        if(fee > 0,
+ 384           scenario_checks(t,s,"incidence_residual") =
+ 385                scenario_results(t,s,"buyer_incidence_pct")
+ 386              + scenario_results(t,s,"exporter_incidence_pct") - 100;
+ 387           abort$(abs(scenario_checks(t,s,"incidence_residual")) > tol_pct)
+ 388              "Fee incidence check failed", t, s;
+ 389        );
+ 390   
+ 391        abort$(abs(scenario_checks(t,s,"quantity_residual")) > tol_quantity or
+ 392               abs(scenario_checks(t,s,"equilibrium_residual")) > tol_price or
+ 393               abs(scenario_checks(t,s,"welfare_residual")) > tol_money or
+ 394               abs(scenario_checks(t,s,"DWL_residual")) > tol_money or
+ 395               deadweight_loss < -tol_money)
+ 396           "Scenario consistency check failed", t, s;
+ 397   
+ 398        if(fee = 0,
+ 399           abort$(abs(X.l-xbar) > tol_quantity or abs(price_fee-pbar) > tol_price)
+ 400              "No-fee calibration check failed", t;
+ 401        );
+ 402   
+ 403     );
+ 404  );
+ 405   
+ 406  * Restore benchmark inputs. X.l and other mutable result scalars
+ 407  * still belong to the last solve; use stored parameters below.
+ 408  e_r = elastic_value("e2");
+ 409  b = pbar/(e_r*xbar);
+ 410  a = pbar - b*xbar;
+ 411  fee = fee_value("f5");
+ 412   
+ 413  * Check the replicated main case against Sections 3 and 4.
+ 414  abort$(abs(scenario_results("e2","f5","exports_Mt")
+ 415          - main_results("with_fee","exports_Mt")) > tol_quantity or
+ 416         abs(scenario_results("e2","f5","DWL_USDm")
+ 417          - main_results("with_fee","DWL_USDm")) > tol_money)
+ 418     "Main case replication failed";
+ 419   
+ 420  display elastic_baseline, scenario_results, scenario_checks;
+ 421   
+ 422  * ----------------------------------------
+ 423  ** 6. Fee and Demand Elasticity Sensitivity Results
+ 424  * ----------------------------------------
+ 425   
+ 426  * Extract the same two sensitivity tables as in Phase 1.
+ 427  * Both tables use the common field names from scenario_results.
+ 428  * No additional optimization is required.
+ 429   
+ 430  parameter
+ 431     fee_results(s,metric) "fee sensitivity at elasticity -2"
+ 432     elastic_results(t,metric) "elasticity sensitivity at USD 5/ton"
+ 433     export_change_matrix(s,t) "export change [percent]"
+ 434     ps_loss_matrix(s,t) "producer surplus loss [million USD]"
+ 435     dwl_matrix(s,t) "deadweight loss [thousand USD]";
+ 436   
+ 437  fee_results(s,metric) = scenario_results("e2",s,metric);
+ 438  elastic_results(t,metric) = scenario_results(t,"f5",metric);
+ 439   
+ 440  export_change_matrix(s,t) = scenario_results(t,s,"export_change_pct");
+ 441  ps_loss_matrix(s,t) = -scenario_results(t,s,"change_PS_USDm");
+ 442  dwl_matrix(s,t) = 1000*scenario_results(t,s,"DWL_USDm");
+ 443   
+ 444  display fee_results, elastic_results,
+ 445          export_change_matrix, ps_loss_matrix, dwl_matrix;
+ 446   
+ 447  * ----------------------------------------
+ 448  ** 7. DSI Operating Margin Sensitivity
+ 449  * ----------------------------------------
+ 450   
+ 451  * Operating margins of 25%, 50%, and 75% are assumed, not estimated.
+ 452  * Operating cost = (1-margin)*gross revenue.
+ 453  * Operating profit = margin*gross revenue.
+ 454  * Costs are assumed incremental real resource costs for net welfare.
+ 455  * Assume full domestic attribution of producer surplus and DSI profit.
+ 456  * Conditional domestic surplus is not Indonesian national welfare.
+ 457  * Governance benefits, corporate taxes, capex and financing are excluded.
+ 458  * The no-DSI / zero-fee benchmark has no incremental DSI costs.
+ 459  * Only the 18 positive-fee scenarios receive margin sensitivity analysis.
+ 460   
+ 461  set m "DSI margin scenarios" /m25, m50, m75/;
+ 462  parameter margin_value(m) "assumed DSI operating margin"
+ 463     /m25 0.25, m50 0.50, m75 0.75/;
+ 464   
+ 465  set fin_metric "financial and net welfare results"
+ 466     /margin_pct, revenue_USDm, operating_cost_USDm, operating_profit_USDm,
+ 467      change_PS_USDm, DWL_USDm, domestic_surplus_change_USDm,
+ 468      net_total_surplus_USDm, net_total_surplus_change_USDm,
+ 469      required_governance_benefit_USDm/;
+ 470   
+ 471  parameter
+ 472     margin_matrix(t,s,m,fin_metric) "54 positive fee and operating margin cases"
+ 473     margin_results(m,fin_metric) "main case operating margin sensitivity"
+ 474     domestic_matrix(t,s,m) "conditional domestic surplus change [million USD]";
+ 475   
+ 476  scalar
+ 477     revenue_case
+ 478     cost_case
+ 479     profit_case
+ 480     ps_change_case
+ 481     dwl_case
+ 482     domestic_change_case
+ 483     net_ts_change_case;
+ 484   
+ 485  loop((t,s,m)$positive_fee(s),
+ 486   
+ 487     revenue_case = scenario_results(t,s,"dsi_revenue_USDm");
+ 488     ps_change_case = scenario_results(t,s,"change_PS_USDm");
+ 489     dwl_case = scenario_results(t,s,"DWL_USDm");
+ 490   
+ 491     cost_case = (1-margin_value(m))*revenue_case;
+ 492     profit_case = margin_value(m)*revenue_case;
+ 493   
+ 494  *  Conditional domestic surplus: producer surplus change plus DSI profit.
+ 495     domestic_change_case = ps_change_case + profit_case;
+ 496   
+ 497  *  Total modeled market surplus including foreign buyers, after costs.
+ 498     net_ts_change_case = -dwl_case - cost_case;
+ 499   
+ 500     margin_matrix(t,s,m,"margin_pct") = 100*margin_value(m);
+ 501     margin_matrix(t,s,m,"revenue_USDm") = revenue_case;
+ 502     margin_matrix(t,s,m,"operating_cost_USDm") = cost_case;
+ 503     margin_matrix(t,s,m,"operating_profit_USDm") = profit_case;
+ 504     margin_matrix(t,s,m,"change_PS_USDm") = ps_change_case;
+ 505     margin_matrix(t,s,m,"DWL_USDm") = dwl_case;
+ 506     margin_matrix(t,s,m,"domestic_surplus_change_USDm") = domestic_change_case;
+ 507     margin_matrix(t,s,m,"net_total_surplus_USDm") =
+ 508        scenario_results(t,s,"total_surplus_USDm") - cost_case;
+ 509     margin_matrix(t,s,m,"net_total_surplus_change_USDm") = net_ts_change_case;
+ 510   
+ 511  *  Minimum incremental real governance benefit needed for market welfare
+ 512  *  break-even; not an estimate of actual governance benefits.
+ 513     margin_matrix(t,s,m,"required_governance_benefit_USDm") =
+ 514        max(0,dwl_case + cost_case);
+ 515   
+ 516     domestic_matrix(t,s,m) = domestic_change_case;
+ 517   
+ 518     abort$(abs(revenue_case-cost_case-profit_case) > tol_money or
+ 519            abs(net_ts_change_case - (scenario_results(t,s,"change_CS_USDm")
+ 520                + domestic_change_case)) > tol_money)
+ 521        "Operating margin accounting check failed", t, s, m;
+ 522  );
+ 523   
+ 524  * Main case: fee = 5, residual demand elasticity = -2.
+ 525  margin_results(m,fin_metric) = margin_matrix("e2","f5",m,fin_metric);
+ 526   
+ 527  display margin_results, margin_matrix, domestic_matrix;
+ 528   
+ 529  * ----------------------------------------
+ 530  ** 8. Conditional Domestic Surplus and Break-even Analysis
+ 531  * ----------------------------------------
+ 532   
+ 533  * Find the minimum operating margin and maximum tolerable operating cost
+ 534  * such that the loss in producer surplus is offset by DSI operating profit.
+ 535  * These are domestic surplus thresholds, NOT corporate break-even margins.
+ 536  * Neither threshold implies total market welfare increases.
+ 537  * No fee optimization or actual operating cost calibration is performed.
+ 538   
+ 539  set be_metric "domestic surplus break-even results"
+ 540     /fee_USD_t, elasticity, revenue_USDm, PS_loss_USDm,
+ 541      min_margin_pct, max_opex_USDm, max_opex_pct_revenue,
+ 542      max_opex_USD_t, domestic_change_at_break_even_USDm/;
+ 543   
+ 544  parameter
+ 545     break_even_results(t,s,be_metric) "positive-fee break-even thresholds"
+ 546     break_even_main(t,be_metric) "break-even at USD 5/ton"
+ 547     min_margin_matrix(s,t) "minimum operating margin [percent]"
+ 548     max_opex_matrix(s,t) "maximum tolerable operating cost [million USD]";
+ 549   
+ 550  scalar
+ 551     ps_loss_case
+ 552     min_margin_case
+ 553     max_opex_case
+ 554     break_even_check;
+ 555   
+ 556  * At zero fee, ratio thresholds are undefined; the no-DSI cost limit is zero.
+ 557  min_margin_matrix("f0",t) = NA;
+ 558  max_opex_matrix("f0",t) = 0;
+ 559   
+ 560  loop((t,s)$positive_fee(s),
+ 561   
+ 562     revenue_case = scenario_results(t,s,"dsi_revenue_USDm");
+ 563     ps_loss_case = -scenario_results(t,s,"change_PS_USDm");
+ 564   
+ 565     abort$(revenue_case <= 0) "Positive revenue required for break-even", t, s;
+ 566   
+ 567     min_margin_case = ps_loss_case/revenue_case;
+ 568     max_opex_case = revenue_case - ps_loss_case;
+ 569     break_even_check = min_margin_case*revenue_case - ps_loss_case;
+ 570   
+ 571  *  Do not truncate the threshold: if margin > 100 percent or cost < 0,
+ 572  *  domestic break-even is not possible with nonnegative operating costs.
+ 573     break_even_results(t,s,"fee_USD_t") = fee_value(s);
+ 574     break_even_results(t,s,"elasticity") = elastic_value(t);
+ 575     break_even_results(t,s,"revenue_USDm") = revenue_case;
+ 576     break_even_results(t,s,"PS_loss_USDm") = ps_loss_case;
+ 577     break_even_results(t,s,"min_margin_pct") = 100*min_margin_case;
+ 578     break_even_results(t,s,"max_opex_USDm") = max_opex_case;
+ 579     break_even_results(t,s,"max_opex_pct_revenue") = 100*(1-min_margin_case);
+ 580     break_even_results(t,s,"max_opex_USD_t") =
+ 581        max_opex_case/scenario_results(t,s,"exports_Mt");
+ 582     break_even_results(t,s,"domestic_change_at_break_even_USDm") = break_even_check;
+ 583   
+ 584     min_margin_matrix(s,t) = 100*min_margin_case;
+ 585     max_opex_matrix(s,t) = max_opex_case;
+ 586   
+ 587     abort$(abs(break_even_check) > tol_money)
+ 588        "Domestic surplus break-even check failed", t, s;
+ 589  );
+ 590   
+ 591  break_even_main(t,be_metric) = break_even_results(t,"f5",be_metric);
+ 592   
+ 593  * Compact output counts for Phase 2.
+ 594  scalar n_market_cases, n_positive_fee_cases, n_margin_cases;
+ 595  n_market_cases = card(t)*card(s);
+ 596  n_positive_fee_cases = card(t)*card(positive_fee);
+ 597  n_margin_cases = n_positive_fee_cases*card(m);
+ 598   
+ 599  display break_even_main, break_even_results,
+ 600          min_margin_matrix, max_opex_matrix,
+ 601          n_market_cases, n_positive_fee_cases, n_margin_cases;
+ 602   
+ 603  * ----------------------------------------
+ 604  ** 9. Sovereign Wealth Accumulation
+ 605  * ----------------------------------------
+ 606   
+ 607  * Illustrative financial extension, not additional economic welfare.
+ 608  * Use the main Phase 2 case: fee = 5 USD/t, demand elasticity = -2.
+ 609  * Assume 100 percent of operating profit is available for distribution
+ 610  * to Danantara and invested at the end of each year.
+ 611  * Annual contribution and nominal USD investment return are constant.
+ 612  * Initial portfolio = 0; no withdrawals, taxes, capex or financing.
+ 613  * Discount rate and investment returns are illustrative, not forecasts.
+ 614  * No additional market equilibrium solves are needed.
+ 615   
+ 616  set r "annual investment return scenarios" /r4, r6p3, r8/;
+ 617  set h "investment horizons" /y5, y10, y20/;
+ 618   
+ 619  parameter return_value(r) "assumed annual investment return"
+ 620     /r4 0.04, r6p3 0.063, r8 0.08/;
+ 621   
+ 622  parameter horizon_years(h) "investment horizon [years]"
+ 623     /y5 5, y10 10, y20 20/;
+ 624   
+ 625  scalar swf_discount_rate "assumed annual nominal USD discount rate" /0.08/;
+ 626  scalar distribution_share "assumed share of operating profit invested" /1/;
+ 627   
+ 628  set swf_metric "sovereign wealth simulation results"
+ 629     /margin_pct, return_pct, years, annual_contribution_USDm,
+ 630      cumulative_contribution_USDm, investment_gain_USDm,
+ 631      future_value_USDm, present_value_USDm/;
+ 632   
+ 633  parameter
+ 634     swf_results(m,r,h,swf_metric) "27 sovereign wealth scenarios"
+ 635     swf_base_return(m,h) "future value at 6.3 percent return [million USD]"
+ 636     swf_high_margin(r,h) "future value at 75 percent margin [million USD]"
+ 637     swf_high_margin_pv(r,h) "present value at 75 percent margin [million USD]";
+ 638   
+ 639  scalar annual_contribution, cumulative_contribution, future_wealth,
+ 640         investment_gain, present_wealth, n_swf_cases;
+ 641   
+ 642  loop((m,r,h),
+ 643   
+ 644  *  Read stored Phase 2 benchmark profits, not the last scenario's scalars.
+ 645     annual_contribution = distribution_share
+ 646                         * margin_results(m,"operating_profit_USDm");
+ 647   
+ 648     cumulative_contribution = annual_contribution*horizon_years(h);
+ 649   
+ 650  *  Ordinary annuity: contributions occur at the end of each year.
+ 651     future_wealth = annual_contribution
+ 652                   * ((1+return_value(r))**horizon_years(h)-1)/return_value(r);
+ 653   
+ 654     investment_gain = future_wealth - cumulative_contribution;
+ 655     present_wealth = future_wealth/(1+swf_discount_rate)**horizon_years(h);
+ 656   
+ 657     swf_results(m,r,h,"margin_pct") = 100*margin_value(m);
+ 658     swf_results(m,r,h,"return_pct") = 100*return_value(r);
+ 659     swf_results(m,r,h,"years") = horizon_years(h);
+ 660     swf_results(m,r,h,"annual_contribution_USDm") = annual_contribution;
+ 661     swf_results(m,r,h,"cumulative_contribution_USDm") = cumulative_contribution;
+ 662     swf_results(m,r,h,"investment_gain_USDm") = investment_gain;
+ 663     swf_results(m,r,h,"future_value_USDm") = future_wealth;
+ 664     swf_results(m,r,h,"present_value_USDm") = present_wealth;
+ 665   
+ 666  *  Basic consistency check: with positive returns, FV >= contributions.
+ 667     abort$(future_wealth < cumulative_contribution-tol_money or
+ 668            present_wealth > future_wealth+tol_money)
+ 669        "Sovereign wealth accounting check failed", m, r, h;
+ 670  );
+ 671   
+ 672  * Compact tables for the main presentation.
+ 673  swf_base_return(m,h) = swf_results(m,"r6p3",h,"future_value_USDm");
+ 674  swf_high_margin(r,h) = swf_results("m75",r,h,"future_value_USDm");
+ 675  swf_high_margin_pv(r,h) = swf_results("m75",r,h,"present_value_USDm");
+ 676   
+ 677  n_swf_cases = card(m)*card(r)*card(h);
+ 678   
+ 679  display return_value, horizon_years, swf_discount_rate, distribution_share,
+ 680          swf_results, swf_base_return, swf_high_margin, swf_high_margin_pv,
+ 681          n_swf_cases;
+ 682   
+ 683  * Do not add sovereign portfolio assets to Phase 2 economic surplus.
+ 684  * PV is the discounted terminal asset balance, not an incremental social NPV.
+ 685   
+EXIT /Users/alharkan/Documents/GitHub/ebgn645_faizalharkan/Final/Final_v03.gms
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 2
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Include File Summary
+
+
+   SEQ   GLOBAL TYPE      PARENT   LOCAL  INCLVL  FILENAME
+
+     1        1 INPUT          0       0       0  /Users/alharkan/Documents/GitHub/ebgn645_faizalharkan/Final/Final_v03.gms
+     2      686 EXIT           1     686       0  /Users/alharkan/Documents/GitHub/ebgn645_faizalharkan/Final/Final_v03.gms
+
+
+COMPILATION TIME     =        0.002 SECONDS      3 MB  54.3.1 61154be4 DAX-DAC
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 3
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----     28 PARAMETER vbar                 =  1.638507E+4  2025 export value [million USD]
+            PARAMETER xbar                 =    11.555600  2025 export quantity [million tons]
+            PARAMETER pbar                 =  1417.933013  average export price [USD/ton]
+            PARAMETER e_r                  =    -2.000000  residual demand elasticity [unitless]
+            PARAMETER e_s                  =     1.000000  supply elasticity [unitless]
+
+----     50 PARAMETER a                    =  2126.899520  demand intercept
+            PARAMETER b                    =   -61.352635  demand slope
+            PARAMETER c                    =     0.000000  marginal cost intercept
+            PARAMETER d                    =   122.705270  marginal cost slope
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 4
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE direct_selling Using QCP From line 72
+
+
+---- eq_surplus  =E=  
+
+eq_surplus..  (0)*X + equilibrium_potential =E= 0 ; (LHS = -12288.8000475, INFES = 12288.8000475 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 5
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE direct_selling Using QCP From line 72
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, 0)
+       (0)      eq_surplus
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+        1       eq_surplus
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 6
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE direct_selling Using QCP From line 72
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 7
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE direct_selling Using QCP From line 72
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  13     CONSTANT POOL              19
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 8
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE direct_selling Using QCP From line 72
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   direct_selling      OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  72
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            12288.8000
+
+ RESOURCE USAGE, LIMIT          0.019 10000000000.000
+ ITERATION COUNT, LIMIT         1    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+ 
+ CONOPT time Total                            0.006 seconds
+   of which: Function evaluations             0.001 = 16.7%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_surplus          .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5556        +INF            EPS         
+---- VAR equilibri~        -INF        12288.8000        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 9
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----     97 PARAMETER exports_base         =    11.555600  baseline export quantity [Mt]
+            PARAMETER price_base           =  1417.933013  baseline buyer and exporter price [USD/ton]
+            PARAMETER exporter_surplus_base =  8192.533365  baseline producer surplus [million USD]
+            PARAMETER consumer_surplus_base =  4096.266682  baseline residual buyer surplus [million USD]
+            PARAMETER total_surplus_base   =  1.228880E+4  baseline modeled market surplus [million USD]
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 10
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 123
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (5)*X + equilibrium_potential =E= 0 ; (LHS = 57.7780000000002, INFES = 57.7780000000002 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 11
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 123
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (5)      eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 12288.8000475, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 12
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 123
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 5.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 13
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 123
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 14
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 123
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  123
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            12231.0900
+
+ RESOURCE USAGE, LIMIT          0.005 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.001 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5284        +INF            EPS         
+---- VAR equilibri~        -INF        12231.0900        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 15
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    179 PARAMETER exports_fee          =    11.528435  export quantity with fee [Mt]
+            PARAMETER price_fee            =  1419.599680  foreign buyer price [USD/ton]
+            PARAMETER net_price_fee        =  1414.599680  net exporter price [USD/ton]
+            PARAMETER exporter_surplus_fee =  8154.059974  producer surplus [million USD]
+            PARAMETER dsi_revenue_fee      =    57.642173  DSI gross revenue [million USD]
+            PARAMETER check_eq             =  -2.2737E-13  fee-adjusted equilibrium residual [USD/ton]
+            PARAMETER consumer_surplus_fee =  4077.029987  residual buyer surplus [million USD]
+            PARAMETER total_surplus_fee    =  1.228873E+4  modeled market surplus before DSI costs [million USD]
+            PARAMETER change_cs            =   -19.236696  change in consumer surplus [million USD]
+            PARAMETER change_ps            =   -38.473391  change in producer surplus [million USD]
+            PARAMETER change_ts            =    -0.067913  change in total surplus [million USD]
+            PARAMETER deadweight_loss      =     0.067913  loss in total surplus before DSI costs [million USD]
+            PARAMETER buyer_incidence      =    33.333333  buyer share of per-ton fee [percent]
+            PARAMETER exporter_incidence   =    66.666667  exporter share of per-ton fee [percent]
+
+----    212 PARAMETER main_results  baseline and main policy scenario
+
+           fee_USD_t  exports_Mt  buyer_pri~  net_price~  consumer_~  exporter_~  dsi_reven~  total_sur~    DWL_USDm  buyer_inc~  exporter_~
+
+no_fee                 11.555600 1417.933013 1417.933013 4096.266682 8192.533365             1.228880E+4                      NA          NA
+with_fee    5.000000   11.528435 1419.599680 1414.599680 4077.029987 8154.059974   57.642173 1.228873E+4    0.067913   33.333333   66.666667
+
+
+----    239 PARAMETER exports_analytical   =    11.528435  
+            PARAMETER dwl_analytical       =     0.067913  
+            PARAMETER check_base_quantity  =     0.000000  
+            PARAMETER check_base_price     =     0.000000  
+            PARAMETER check_base_eq        =     0.000000  
+            PARAMETER check_quantity       =     0.000000  
+            PARAMETER check_eq             =  -2.2737E-13  fee-adjusted equilibrium residual [USD/ton]
+            PARAMETER check_welfare        =  -1.6129E-12  
+            PARAMETER check_dwl            =  6.82121E-13  
+            PARAMETER check_incidence      =     0.000000  
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 16
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (0)*X + equilibrium_potential =E= 0 ; (LHS = -4153.9767690896, INFES = 4153.9767690896 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 17
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (0)      eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 12231.0899609104, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 18
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 19
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e1
+                                         s   f0
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  13     CONSTANT POOL              19
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e1
+                                          s f0
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 20
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            16385.0667
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         1    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5556        +INF            EPS         
+---- VAR equilibri~        -INF        16385.0667        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 21
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (0.5)*X + equilibrium_potential =E= 0 ; (LHS = 5.77779999999984, INFES = 5.77779999999984 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 22
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (0.5)    eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 16385.06673, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 23
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 5.000E-01, 1.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 24
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e1
+                                         s   f0p5
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e1
+                                          s f0p5
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 25
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            16379.2894
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5536        +INF            EPS         
+---- VAR equilibri~        -INF        16379.2894        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 26
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (1)*X + equilibrium_potential =E= 0 ; (LHS = 5.77830935057682, INFES = 5.77830935057682 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 27
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (1)      eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 16379.2894393506, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 28
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 1.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 29
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e1
+                                         s   f1
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  14     CONSTANT POOL              19
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e1
+                                          s f1
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 30
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            16373.5132
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5515        +INF            EPS         
+---- VAR equilibri~        -INF        16373.5132        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 31
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (3)*X + equilibrium_potential =E= 0 ; (LHS = 23.1132374023091, INFES = 23.1132374023091 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 32
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (3)      eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 16373.5131674023, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 33
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 3.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 34
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e1
+                                         s   f3
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e1
+                                          s f3
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 35
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            16350.4183
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.001 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5434        +INF            EPS         
+---- VAR equilibri~        -INF        16350.4183        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 36
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (5)*X + equilibrium_potential =E= 0 ; (LHS = 23.1295366208105, INFES = 23.1295366208105 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 37
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (5)      eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 16350.4182666208, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 38
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 5.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 39
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e1
+                                         s   f5
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e1
+                                          s f5
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 40
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            16327.3397
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.001 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5352        +INF            EPS         
+---- VAR equilibri~        -INF        16327.3397        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 41
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (7)*X + equilibrium_potential =E= 0 ; (LHS = 23.1621350577989, INFES = 23.1621350577989 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 42
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (7)      eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 16327.3396650578, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 43
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 7.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 44
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e1
+                                         s   f7
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e1
+                                          s f7
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 45
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            16304.2774
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5271        +INF            EPS         
+---- VAR equilibri~        -INF        16304.2774        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 46
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (9)*X + equilibrium_potential =E= 0 ; (LHS = 23.2110327132941, INFES = 23.2110327132941 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 47
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (9)      eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 16304.2773627133, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 48
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 9.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 49
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e1
+                                         s   f9
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e1
+                                          s f9
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 50
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            16281.2314
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.001 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.001 =100.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5189        +INF            EPS         
+---- VAR equilibri~        -INF        16281.2314        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 51
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (0)*X + equilibrium_potential =E= 0 ; (LHS = 3992.43131208728, INFES = 3992.43131208728 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 52
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (0)      eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 16281.2313595873, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 53
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 54
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e2
+                                         s   f0
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  13     CONSTANT POOL              19
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e2
+                                          s f0
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 55
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            12288.8000
+
+ RESOURCE USAGE, LIMIT          0.003 10000000000.000
+ ITERATION COUNT, LIMIT         1    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5556        +INF            EPS         
+---- VAR equilibri~        -INF        12288.8000        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 56
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (0.5)*X + equilibrium_potential =E= 0 ; (LHS = 5.77779999999984, INFES = 5.77779999999984 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 57
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (0.5)    eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 12288.8000475, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 58
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 5.000E-01, 1.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 59
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e2
+                                         s   f0p5
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e2
+                                          s f0p5
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 60
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            12283.0229
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5529        +INF            EPS         
+---- VAR equilibri~        -INF        12283.0229        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 61
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (1)*X + equilibrium_potential =E= 0 ; (LHS = 5.77847913410733, INFES = 5.77847913410733 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 62
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (1)      eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 12283.0229266341, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 63
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 1.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 64
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e2
+                                         s   f1
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  14     CONSTANT POOL              19
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e2
+                                          s f1
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 65
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            12277.2472
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5502        +INF            EPS         
+---- VAR equilibri~        -INF        12277.2472        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 66
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (3)*X + equilibrium_potential =E= 0 ; (LHS = 23.1139165364184, INFES = 23.1139165364184 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 67
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (3)      eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 12277.2471640364, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 68
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 3.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 69
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e2
+                                         s   f3
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e2
+                                          s f3
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 70
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            12254.1577
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.001 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.001 =100.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5393        +INF            EPS         
+---- VAR equilibri~        -INF        12254.1577        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 71
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (5)*X + equilibrium_potential =E= 0 ; (LHS = 23.1356488277488, INFES = 23.1356488277488 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 72
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (5)      eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 12254.1576963277, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 73
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 5.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 74
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e2
+                                         s   f5
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e2
+                                          s f5
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 75
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            12231.0900
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5284        +INF            EPS         
+---- VAR equilibri~        -INF        12231.0900        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 76
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (7)*X + equilibrium_potential =E= 0 ; (LHS = 23.1791134104024, INFES = 23.1791134104024 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 77
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (7)      eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 12231.0899609104, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 78
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 7.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 79
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e2
+                                         s   f7
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e2
+                                          s f7
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 80
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            12208.0440
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5176        +INF            EPS         
+---- VAR equilibri~        -INF        12208.0440        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 81
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (9)*X + equilibrium_potential =E= 0 ; (LHS = 23.2443102843936, INFES = 23.2443102843936 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 82
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (9)      eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 12208.0439577844, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 83
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 9.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 84
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e2
+                                         s   f9
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e2
+                                          s f9
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 85
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            12185.0197
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5067        +INF            EPS         
+---- VAR equilibri~        -INF        12185.0197        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 86
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (0)*X + equilibrium_potential =E= 0 ; (LHS = 1944.35298069971, INFES = 1944.35298069971 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 87
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (0)      eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 12185.0196869497, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 88
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 89
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e4
+                                         s   f0
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  13     CONSTANT POOL              19
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e4
+                                          s f0
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 90
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            10240.6667
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         1    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5556        +INF            EPS         
+---- VAR equilibri~        -INF        10240.6667        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 91
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (0.5)*X + equilibrium_potential =E= 0 ; (LHS = 5.77779999999984, INFES = 5.77779999999984 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 92
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (0.5)    eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 10240.66670625, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 93
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 5.000E-01, 1.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 94
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e4
+                                         s   f0p5
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e4
+                                          s f0p5
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 95
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            10234.8897
+
+ RESOURCE USAGE, LIMIT          0.003 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.001 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5523        +INF            EPS         
+---- VAR equilibri~        -INF        10234.8897        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 96
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (1)*X + equilibrium_potential =E= 0 ; (LHS = 5.77861496092373, INFES = 5.77861496092373 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 97
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (1)      eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 10234.8897212109, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 98
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 1.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 99
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e4
+                                         s   f1
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  14     CONSTANT POOL              19
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e4
+                                          s f1
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 100
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            10229.1144
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5491        +INF            EPS         
+---- VAR equilibri~        -INF        10229.1144        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 101
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (3)*X + equilibrium_potential =E= 0 ; (LHS = 23.1144598437004, INFES = 23.1144598437004 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 102
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (3)      eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 10229.1143660937, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 103
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 3.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 104
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e4
+                                         s   f3
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e4
+                                          s f3
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 105
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            10206.0292
+
+ RESOURCE USAGE, LIMIT          0.003 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5360        +INF            EPS         
+---- VAR equilibri~        -INF        10206.0292        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 106
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (5)*X + equilibrium_potential =E= 0 ; (LHS = 23.1405385932958, INFES = 23.1405385932958 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 107
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (5)      eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 10206.0292448433, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 108
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 5.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 109
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e4
+                                         s   f5
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e4
+                                          s f5
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 110
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            10182.9702
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5230        +INF            EPS         
+---- VAR equilibri~        -INF        10182.9702        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 111
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (7)*X + equilibrium_potential =E= 0 ; (LHS = 23.1926960924866, INFES = 23.1926960924866 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 112
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (7)      eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 10182.9702023425, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 113
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 7.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 114
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e4
+                                         s   f7
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.001 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e4
+                                          s f7
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 115
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            10159.9372
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.5100        +INF            EPS         
+---- VAR equilibri~        -INF        10159.9372        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 116
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- eq_fee  =E=  
+
+eq_fee..  (9)*X + equilibrium_potential =E= 0 ; (LHS = 23.2709323412746, INFES = 23.2709323412746 ****)
+     
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 117
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+
+
+---- X  export quantity
+
+X
+                (.LO, .L, .UP, .M = 0, 11.5556, +INF, EPS)
+       (9)      eq_fee
+
+
+---- equilibrium_potential  equilibrium potential, not national welfare
+
+equilibrium_potential
+                (.LO, .L, .UP, .M = -INF, 10159.9372385913, +INF, 0)
+        1       eq_fee
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 118
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [        NA,        NA] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 9.000E+00]
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 119
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+
+
+LOOPS                                    t   e4
+                                         s   f9
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS            1
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            2
+NON ZERO ELEMENTS             2     NON LINEAR N-Z              1
+CODE LENGTH                  15     CONSTANT POOL              20
+
+
+GENERATION TIME      =        0.000 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+               L O O P S                  t e4
+                                          s f9
+
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 120
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   with_dsi_fee        OBJECTIVE  equilibrium_potential
+     TYPE    QCP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  318
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE            10136.9304
+
+ RESOURCE USAGE, LIMIT          0.004 10000000000.000
+ ITERATION COUNT, LIMIT         2    2147483647
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T   version 4.39.1
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 1 constraints and 2 variables
+    with 2 Jacobian elements, 1 of which are nonlinear.
+    The Hessian of the Lagrangian has 1 elements on the diagonal,
+    0 elements below the diagonal, and 1 nonlinear variables.
+ 
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has no constraints and 1 variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+             2nd Derivative evaluations       0.000 =  0.0%
+             Directional 2nd Deriv(Hess)      0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
+ 
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU eq_fee              .              .              .             1.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR X                   .            11.4969        +INF            EPS         
+---- VAR equilibri~        -INF        10136.9304        +INF             .          
+
+  X  export quantity
+  equilibrium_potential  equilibrium potential, not national welfare
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 54.3.1  61154be4 Aug 21, 2026          DAX-DAC arm 64bit/macOS - 11/24/26 12:51:48 Page 121
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    420 PARAMETER elastic_baseline  analytical no-fee benchmark by elasticity
+
+    exports_Mt  consumer_~  exporter_~  total_sur~  elasticity  price_USD~
+
+e1   11.555600 8192.533365 8192.533365 1.638507E+4   -1.000000 1417.933013
+e2   11.555600 4096.266682 8192.533365 1.228880E+4   -2.000000 1417.933013
+e4   11.555600 2048.133341 8192.533365 1.024067E+4   -4.000000 1417.933013
+
+
+----    420 PARAMETER scenario_results  all 21 market equilibrium combinations
+
+          fee_USD_t  exports_Mt  buyer_pri~  net_price~  consumer_~  exporter_~  dsi_reven~  total_sur~    DWL_USDm  buyer_inc~  exporter_~  elasticity  export_ch~  buyer_pri~  exporter_~  change_CS~  change_PS~  change_TS~
+
+e1.f0                 11.555600 1417.933013 1417.933013 8192.533365 8192.533365             1.638507E+4                      NA          NA   -1.000000
+e1.f0p5    0.500000   11.553563 1418.183013 1417.683013 8189.644720 8189.644720    5.776781 1.638507E+4    0.000509   50.000000   50.000000   -1.000000   -0.017631    0.250000   -0.250000   -2.888645   -2.888645   -0.000509
+e1.f1      1.000000   11.551525 1418.433013 1417.433013 8186.756584 8186.756584   11.551525 1.638506E+4    0.002037   50.000000   50.000000   -1.000000   -0.035263    0.500000   -0.500000   -5.776781   -5.776781   -0.002037
+e1.f3      3.000000   11.543376 1419.433013 1416.433013 8175.209133 8175.209133   34.630127 1.638505E+4    0.018337   50.000000   50.000000   -1.000000   -0.105788    1.500000   -1.500000  -17.324232  -17.324232   -0.018337
+e1.f5      5.000000   11.535226 1420.433013 1415.433013 8163.669833 8163.669833   57.676130 1.638502E+4    0.050935   50.000000   50.000000   -1.000000   -0.176313    2.500000   -2.500000  -28.863532  -28.863532   -0.050935
+e1.f7      7.000000   11.527076 1421.433013 1414.433013 8152.138681 8152.138681   80.689535 1.638497E+4    0.099833   50.000000   50.000000   -1.000000   -0.246838    3.500000   -3.500000  -40.394684  -40.394684   -0.099833
+e1.f9      9.000000   11.518927 1422.433013 1413.433013 8140.615680 8140.615680  103.670341 1.638490E+4    0.165030   50.000000   50.000000   -1.000000   -0.317363    4.500000   -4.500000  -51.917685  -51.917685   -0.165030
+e2.f0                 11.555600 1417.933013 1417.933013 4096.266682 8192.533365             1.228880E+4                      NA          NA   -2.000000
+e2.f0p5    0.500000   11.552883 1418.099680 1417.599680 4094.340976 8188.681951    5.776442 1.228880E+4    0.000679   33.333333   66.666667   -2.000000   -0.023508    0.166667   -0.333333   -1.925707   -3.851414   -0.000679
+e2.f1      1.000000   11.550167 1418.266347 1417.266347 4092.415721 8184.831443   11.550167 1.228880E+4    0.002717   33.333333   66.666667   -2.000000   -0.047017    0.333333   -0.666667   -3.850961   -7.701922   -0.002717
+e2.f3      3.000000   11.539301 1418.933013 1415.933013 4084.719232 8169.438464   34.617902 1.228878E+4    0.024449   33.333333   66.666667   -2.000000   -0.141050    1.000000   -2.000000  -11.547450  -23.094901   -0.024449
+e2.f5      5.000000   11.528435 1419.599680 1414.599680 4077.029987 8154.059974   57.642173 1.228873E+4    0.067913   33.333333   66.666667   -2.000000   -0.235084    1.666667   -3.333333  -19.236696  -38.473391   -0.067913
+e2.f7      7.000000   11.517568 1420.266347 1413.266347 4069.347986 8138.695972   80.622979 1.228867E+4    0.133110   33.333333   66.666667   -2.000000   -0.329118    2.333333   -4.666667  -26.918697  -53.837393   -0.133110
+e2.f9      9.000000   11.506702 1420.933013 1411.933013 4061.673229 8123.346458  103.560321 1.228858E+4    0.220039   33.333333   66.666667   -2.000000   -0.423151    3.000000   -6.000000  -34.593454  -69.186907   -0.220039
+e4.f0                 11.555600 1417.933013 1417.933013 2048.133341 8192.533365             1.024067E+4 -1.8190E-12          NA          NA   -4.000000 2.22045E-14                         4.54747E-13 1.81899E-12 1.81899E-12
+e4.f0p5    0.500000   11.552340 1418.033013 1417.533013 2046.977944 8187.911777    5.776170 1.024067E+4    0.000815   20.000000   80.000000   -4.000000   -0.028210    0.100000   -0.400000   -1.155397   -4.621588   -0.000815
+e4.f1      1.000000   11.549080 1418.133013 1417.133013 2045.822873 8183.291493   11.549080 1.024066E+4    0.003260   20.000000   80.000000   -4.000000   -0.056420    0.200000   -0.800000   -2.310468   -9.241872   -0.003260
+e4.f3      3.000000   11.536041 1418.533013 1415.533013 2041.205849 8164.823396   34.608123 1.024064E+4    0.029339   20.000000   80.000000   -4.000000   -0.169260    0.600000   -2.400000   -6.927492  -27.709969   -0.029339
+e4.f5      5.000000   11.523002 1418.933013 1413.933013 2036.594040 8146.376162   57.615008 1.024059E+4    0.081496   20.000000   80.000000   -4.000000   -0.282101    1.000000   -4.000000  -11.539301  -46.157203   -0.081496
+e4.f7      7.000000   11.509962 1419.333013 1412.333013 2031.987448 8127.949791   80.569735 1.024051E+4    0.159732   20.000000   80.000000   -4.000000   -0.394941    1.400000   -5.600000  -16.145894  -64.583574   -0.159732
+e4.f9      9.000000   11.496923 1419.733013 1410.733013 2027.386071 8109.544283  103.472305 1.024040E+4    0.264047   20.000000   80.000000   -4.000000   -0.507781    1.800000   -7.200000  -20.747271  -82.989082   -0.264047
+
+
+----    420 PARAMETER scenario_checks  basic numerical consistency checks
+
+         solver_st~  model_sta~  quantity_~  equilibri~  welfare_r~  DWL_resid~  incidence~
+
+e1.f0      1.000000    2.000000                                                          NA
+e1.f0p5    1.000000    2.000000                         1.68665E-12 7.64722E-13
+e1.f1      1.000000    2.000000                         -8.4555E-13 -5.7998E-13
+e1.f3      1.000000    2.000000                         -3.9790E-13 -1.5792E-12
+e1.f5      1.000000    2.000000                         -1.3500E-13 5.68434E-14
+e1.f7      1.000000    2.000000                         -5.6843E-14 6.91003E-13
+e1.f9      1.000000    2.000000                         1.67688E-12 3.31291E-13
+e2.f0      1.000000    2.000000                                                          NA
+e2.f0p5    1.000000    2.000000 1.77636E-15 -2.2737E-13 -6.8390E-13 1.62581E-12
+e2.f1      1.000000    2.000000 1.77636E-15 -2.2737E-13 1.04272E-12 1.04627E-12
+e2.f3      1.000000    2.000000 1.77636E-15             -6.9633E-13 -1.5001E-12
+e2.f5      1.000000    2.000000             -2.2737E-13 -1.6129E-12 6.82121E-13
+e2.f7      1.000000    2.000000             2.27374E-13 -3.4106E-13 -1.5019E-12
+e2.f9      1.000000    2.000000                         -5.4001E-13 1.04272E-12
+e4.f0      1.000000    2.000000 1.77636E-15             4.54747E-13 -1.8190E-12          NA
+e4.f0p5    1.000000    2.000000                         5.68434E-14 -9.5923E-13
+e4.f1      1.000000    2.000000 1.77636E-15             -5.4001E-13 -3.8369E-12
+e4.f3      1.000000    2.000000                         -6.1107E-13 -1.7986E-12
+e4.f5      1.000000    2.000000 1.77636E-15             8.95284E-13 -3.1770E-12
+e4.f7      1.000000    2.000000 1.77636E-15             5.54223E-13 -2.5224E-12
+e4.f9      1.000000    2.000000                         -1.3927E-12 -3.4701E-12
+
+
+----    444 PARAMETER fee_results  fee sensitivity at elasticity -2
+
+       fee_USD_t  exports_Mt  buyer_pri~  net_price~  consumer_~  exporter_~  dsi_reven~  total_sur~    DWL_USDm  buyer_inc~  exporter_~  elasticity  export_ch~  buyer_pri~  exporter_~  change_CS~  change_PS~  change_TS~
+
+f0                 11.555600 1417.933013 1417.933013 4096.266682 8192.533365             1.228880E+4                      NA          NA   -2.000000
+f0p5    0.500000   11.552883 1418.099680 1417.599680 4094.340976 8188.681951    5.776442 1.228880E+4    0.000679   33.333333   66.666667   -2.000000   -0.023508    0.166667   -0.333333   -1.925707   -3.851414   -0.000679
+f1      1.000000   11.550167 1418.266347 1417.266347 4092.415721 8184.831443   11.550167 1.228880E+4    0.002717   33.333333   66.666667   -2.000000   -0.047017    0.333333   -0.666667   -3.850961   -7.701922   -0.002717
+f3      3.000000   11.539301 1418.933013 1415.933013 4084.719232 8169.438464   34.617902 1.228878E+4    0.024449   33.333333   66.666667   -2.000000   -0.141050    1.000000   -2.000000  -11.547450  -23.094901   -0.024449
+f5      5.000000   11.528435 1419.599680 1414.599680 4077.029987 8154.059974   57.642173 1.228873E+4    0.067913   33.333333   66.666667   -2.000000   -0.235084    1.666667   -3.333333  -19.236696  -38.473391   -0.067913
+f7      7.000000   11.517568 1420.266347 1413.266347 4069.347986 8138.695972   80.622979 1.228867E+4    0.133110   33.333333   66.666667   -2.000000   -0.329118    2.333333   -4.666667  -26.918697  -53.837393   -0.133110
+f9      9.000000   11.506702 1420.933013 1411.933013 4061.673229 8123.346458  103.560321 1.228858E+4    0.220039   33.333333   66.666667   -2.000000   -0.423151    3.000000   -6.000000  -34.593454  -69.186907   -0.220039
+
+
+----    444 PARAMETER elastic_results  elasticity sensitivity at USD 5/ton
+
+     fee_USD_t  exports_Mt  buyer_pri~  net_price~  consumer_~  exporter_~  dsi_reven~  total_sur~    DWL_USDm  buyer_inc~  exporter_~  elasticity  export_ch~  buyer_pri~  exporter_~  change_CS~  change_PS~  change_TS~
+
+e1    5.000000   11.535226 1420.433013 1415.433013 8163.669833 8163.669833   57.676130 1.638502E+4    0.050935   50.000000   50.000000   -1.000000   -0.176313    2.500000   -2.500000  -28.863532  -28.863532   -0.050935
+e2    5.000000   11.528435 1419.599680 1414.599680 4077.029987 8154.059974   57.642173 1.228873E+4    0.067913   33.333333   66.666667   -2.000000   -0.235084    1.666667   -3.333333  -19.236696  -38.473391   -0.067913
+e4    5.000000   11.523002 1418.933013 1413.933013 2036.594040 8146.376162   57.615008 1.024059E+4    0.081496   20.000000   80.000000   -4.000000   -0.282101    1.000000   -4.000000  -11.539301  -46.157203   -0.081496
+
+
+----    444 PARAMETER export_change_matrix  export change [percent]
+
+              e1          e2          e4
+
+f0                           2.22045E-14
+f0p5   -0.017631   -0.023508   -0.028210
+f1     -0.035263   -0.047017   -0.056420
+f3     -0.105788   -0.141050   -0.169260
+f5     -0.176313   -0.235084   -0.282101
+f7     -0.246838   -0.329118   -0.394941
+f9     -0.317363   -0.423151   -0.507781
+
+
+----    444 PARAMETER ps_loss_matrix  producer surplus loss [million USD]
+
+              e1          e2          e4
+
+f0                           -1.8190E-12
+f0p5    2.888645    3.851414    4.621588
+f1      5.776781    7.701922    9.241872
+f3     17.324232   23.094901   27.709969
+f5     28.863532   38.473391   46.157203
+f7     40.394684   53.837393   64.583574
+f9     51.917685   69.186907   82.989082
+
+
+----    444 PARAMETER dwl_matrix  deadweight loss [thousand USD]
+
+              e1          e2          e4
+
+f0                           -1.81899E-9
+f0p5    0.509351    0.679134    0.814961
+f1      2.037402    2.716536    3.259844
+f3     18.336621   24.448828   29.338593
+f5     50.935058   67.913410   81.496092
+f7     99.832713  133.110284  159.732341
+f9    165.029587  220.039450  264.047340
+
+
+----    527 PARAMETER margin_results  main case operating margin sensitivity
+
+       DWL_USDm  change_PS~  margin_pct  revenue_U~  operating~  operating~  domestic_~  net_total~  net_total~  required_~
+
+m25    0.067913  -38.473391   25.000000   57.642173   43.231630   14.410543  -24.062848 1.224550E+4  -43.299543   43.299543
+m50    0.067913  -38.473391   50.000000   57.642173   28.821087   28.821087   -9.652304 1.225991E+4  -28.889000   28.889000
+m75    0.067913  -38.473391   75.000000   57.642173   14.410543   43.231630    4.758239 1.227432E+4  -14.478457   14.478457
+
+
+----    527 PARAMETER margin_matrix  54 positive fee and operating margin cases
+
+INDEX 1 = e1
+
+            DWL_USDm  change_PS~  margin_pct  revenue_U~  operating~  operating~  domestic_~  net_total~  net_total~  required_~
+
+f0p5.m25    0.000509   -2.888645   25.000000    5.776781    4.332586    1.444195   -1.444450 1.638073E+4   -4.333095    4.333095
+f0p5.m50    0.000509   -2.888645   50.000000    5.776781    2.888391    2.888391   -0.000255 1.638218E+4   -2.888900    2.888900
+f0p5.m75    0.000509   -2.888645   75.000000    5.776781    1.444195    4.332586    1.443941 1.638362E+4   -1.444705    1.444705
+f1  .m25    0.002037   -5.776781   25.000000   11.551525    8.663644    2.887881   -2.888900 1.637640E+4   -8.665681    8.665681
+f1  .m50    0.002037   -5.776781   50.000000   11.551525    5.775763    5.775763   -0.001019 1.637929E+4   -5.777800    5.777800
+f1  .m75    0.002037   -5.776781   75.000000   11.551525    2.887881    8.663644    2.886863 1.638218E+4   -2.889919    2.889919
+f3  .m25    0.018337  -17.324232   25.000000   34.630127   25.972595    8.657532   -8.666700 1.635908E+4  -25.990932   25.990932
+f3  .m50    0.018337  -17.324232   50.000000   34.630127   17.315063   17.315063   -0.009168 1.636773E+4  -17.333400   17.333400
+f3  .m75    0.018337  -17.324232   75.000000   34.630127    8.657532   25.972595    8.648363 1.637639E+4   -8.675868    8.675868
+f5  .m25    0.050935  -28.863532   25.000000   57.676130   43.257097   14.419032  -14.444500 1.634176E+4  -43.308032   43.308032
+f5  .m50    0.050935  -28.863532   50.000000   57.676130   28.838065   28.838065   -0.025468 1.635618E+4  -28.889000   28.889000
+f5  .m75    0.050935  -28.863532   75.000000   57.676130   14.419032   43.257097   14.393565 1.637060E+4  -14.469968   14.469968
+f7  .m25    0.099833  -40.394684   25.000000   80.689535   60.517151   20.172384  -20.222300 1.632445E+4  -60.616984   60.616984
+f7  .m50    0.099833  -40.394684   50.000000   80.689535   40.344767   40.344767   -0.049916 1.634462E+4  -40.444600   40.444600
+f7  .m75    0.099833  -40.394684   75.000000   80.689535   20.172384   60.517151   20.122467 1.636479E+4  -20.272216   20.272216
+f9  .m25    0.165030  -51.917685   25.000000  103.670341   77.752756   25.917585  -26.000100 1.630715E+4  -77.917785   77.917785
+f9  .m50    0.165030  -51.917685   50.000000  103.670341   51.835170   51.835170   -0.082515 1.633307E+4  -52.000200   52.000200
+f9  .m75    0.165030  -51.917685   75.000000  103.670341   25.917585   77.752756   25.835070 1.635898E+4  -26.082615   26.082615
+
+INDEX 1 = e2
+
+            DWL_USDm  change_PS~  margin_pct  revenue_U~  operating~  operating~  domestic_~  net_total~  net_total~  required_~
+
+f0p5.m25    0.000679   -3.851414   25.000000    5.776442    4.332331    1.444110   -2.407303 1.228447E+4   -4.333010    4.333010
+f0p5.m50    0.000679   -3.851414   50.000000    5.776442    2.888221    2.888221   -0.963193 1.228591E+4   -2.888900    2.888900
+f0p5.m75    0.000679   -3.851414   75.000000    5.776442    1.444110    4.332331    0.480917 1.228736E+4   -1.444790    1.444790
+f1  .m25    0.002717   -7.701922   25.000000   11.550167    8.662625    2.887542   -4.814381 1.228013E+4   -8.665342    8.665342
+f1  .m50    0.002717   -7.701922   50.000000   11.550167    5.775083    5.775083   -1.926839 1.228302E+4   -5.777800    5.777800
+f1  .m75    0.002717   -7.701922   75.000000   11.550167    2.887542    8.662625    0.960703 1.228591E+4   -2.890258    2.890258
+f3  .m25    0.024449  -23.094901   25.000000   34.617902   25.963427    8.654476  -14.440425 1.226281E+4  -25.987876   25.987876
+f3  .m50    0.024449  -23.094901   50.000000   34.617902   17.308951   17.308951   -5.785950 1.227147E+4  -17.333400   17.333400
+f3  .m75    0.024449  -23.094901   75.000000   34.617902    8.654476   25.963427    2.868526 1.228012E+4   -8.678924    8.678924
+f5  .m25    0.067913  -38.473391   25.000000   57.642173   43.231630   14.410543  -24.062848 1.224550E+4  -43.299543   43.299543
+f5  .m50    0.067913  -38.473391   50.000000   57.642173   28.821087   28.821087   -9.652304 1.225991E+4  -28.889000   28.889000
+f5  .m75    0.067913  -38.473391   75.000000   57.642173   14.410543   43.231630    4.758239 1.227432E+4  -14.478457   14.478457
+f7  .m25    0.133110  -53.837393   25.000000   80.622979   60.467235   20.155745  -33.681648 1.222820E+4  -60.600345   60.600345
+f7  .m50    0.133110  -53.837393   50.000000   80.622979   40.311490   40.311490  -13.525903 1.224836E+4  -40.444600   40.444600
+f7  .m75    0.133110  -53.837393   75.000000   80.622979   20.155745   60.467235    6.629841 1.226851E+4  -20.288855   20.288855
+f9  .m25    0.220039  -69.186907   25.000000  103.560321   77.670241   25.890080  -43.296827 1.221091E+4  -77.890280   77.890280
+f9  .m50    0.220039  -69.186907   50.000000  103.560321   51.780161   51.780161  -17.406746 1.223680E+4  -52.000200   52.000200
+f9  .m75    0.220039  -69.186907   75.000000  103.560321   25.890080   77.670241    8.483334 1.226269E+4  -26.110120   26.110120
+
+INDEX 1 = e4
+
+            DWL_USDm  change_PS~  margin_pct  revenue_U~  operating~  operating~  domestic_~  net_total~  net_total~  required_~
+
+f0p5.m25    0.000815   -4.621588   25.000000    5.776170    4.332128    1.444043   -3.177546 1.023633E+4   -4.332943    4.332943
+f0p5.m50    0.000815   -4.621588   50.000000    5.776170    2.888085    2.888085   -1.733503 1.023778E+4   -2.888900    2.888900
+f0p5.m75    0.000815   -4.621588   75.000000    5.776170    1.444043    4.332128   -0.289460 1.023922E+4   -1.444857    1.444857
+f1  .m25    0.003260   -9.241872   25.000000   11.549080    8.661810    2.887270   -6.354602 1.023200E+4   -8.665070    8.665070
+f1  .m50    0.003260   -9.241872   50.000000   11.549080    5.774540    5.774540   -3.467332 1.023489E+4   -5.777800    5.777800
+f1  .m75    0.003260   -9.241872   75.000000   11.549080    2.887270    8.661810   -0.580062 1.023778E+4   -2.890530    2.890530
+f3  .m25    0.029339  -27.709969   25.000000   34.608123   25.956092    8.652031  -19.057938 1.021468E+4  -25.985431   25.985431
+f3  .m50    0.029339  -27.709969   50.000000   34.608123   17.304061   17.304061  -10.405908 1.022333E+4  -17.333400   17.333400
+f3  .m75    0.029339  -27.709969   75.000000   34.608123    8.652031   25.956092   -1.753877 1.023199E+4   -8.681369    8.681369
+f5  .m25    0.081496  -46.157203   25.000000   57.615008   43.211256   14.403752  -31.753451 1.019737E+4  -43.292752   43.292752
+f5  .m50    0.081496  -46.157203   50.000000   57.615008   28.807504   28.807504  -17.349699 1.021178E+4  -28.889000   28.889000
+f5  .m75    0.081496  -46.157203   75.000000   57.615008   14.403752   43.211256   -2.945947 1.022618E+4  -14.485248   14.485248
+f7  .m25    0.159732  -64.583574   25.000000   80.569735   60.427301   20.142434  -44.441140 1.018008E+4  -60.587034   60.587034
+f7  .m50    0.159732  -64.583574   50.000000   80.569735   40.284868   40.284868  -24.298706 1.020022E+4  -40.444600   40.444600
+f7  .m75    0.159732  -64.583574   75.000000   80.569735   20.142434   60.427301   -4.156273 1.022036E+4  -20.302166   20.302166
+f9  .m25    0.264047  -82.989082   25.000000  103.472305   77.604229   25.868076  -57.121006 1.016280E+4  -77.868276   77.868276
+f9  .m50    0.264047  -82.989082   50.000000  103.472305   51.736153   51.736153  -31.252929 1.018867E+4  -52.000200   52.000200
+f9  .m75    0.264047  -82.989082   75.000000  103.472305   25.868076   77.604229   -5.384853 1.021453E+4  -26.132124   26.132124
+
+
+----    527 PARAMETER domestic_matrix  conditional domestic surplus change [million USD]
+
+                m25         m50         m75
+
+e1.f0p5   -1.444450   -0.000255    1.443941
+e1.f1     -2.888900   -0.001019    2.886863
+e1.f3     -8.666700   -0.009168    8.648363
+e1.f5    -14.444500   -0.025468   14.393565
+e1.f7    -20.222300   -0.049916   20.122467
+e1.f9    -26.000100   -0.082515   25.835070
+e2.f0p5   -2.407303   -0.963193    0.480917
+e2.f1     -4.814381   -1.926839    0.960703
+e2.f3    -14.440425   -5.785950    2.868526
+e2.f5    -24.062848   -9.652304    4.758239
+e2.f7    -33.681648  -13.525903    6.629841
+e2.f9    -43.296827  -17.406746    8.483334
+e4.f0p5   -3.177546   -1.733503   -0.289460
+e4.f1     -6.354602   -3.467332   -0.580062
+e4.f3    -19.057938  -10.405908   -1.753877
+e4.f5    -31.753451  -17.349699   -2.945947
+e4.f7    -44.441140  -24.298706   -4.156273
+e4.f9    -57.121006  -31.252929   -5.384853
+
+
+----    599 PARAMETER break_even_main  break-even at USD 5/ton
+
+     fee_USD_t  elasticity  revenue_U~  PS_loss_U~  min_margi~  max_opex_~  max_opex_~  max_opex_~
+
+e1    5.000000   -1.000000   57.676130   28.863532   50.044156   28.812597   49.955844    2.497792
+e2    5.000000   -2.000000   57.642173   38.473391   66.745213   19.168782   33.254787    1.662739
+e4    5.000000   -4.000000   57.615008   46.157203   80.113160   11.457805   19.886840    0.994342
+
+
+----    599 PARAMETER break_even_results  positive-fee break-even thresholds
+
+          fee_USD_t  elasticity  revenue_U~  PS_loss_U~  min_margi~  max_opex_~  max_opex_~  max_opex_~  domestic_~
+
+e1.f0p5    0.500000   -1.000000    5.776781    2.888645   50.004409    2.888136   49.995591    0.249978
+e1.f1      1.000000   -1.000000   11.551525    5.776781   50.008819    5.774744   49.991181    0.499912
+e1.f3      3.000000   -1.000000   34.630127   17.324232   50.026475   17.305895   49.973525    1.499206
+e1.f5      5.000000   -1.000000   57.676130   28.863532   50.044156   28.812597   49.955844    2.497792
+e1.f7      7.000000   -1.000000   80.689535   40.394684   50.061862   40.294851   49.938138    3.495670
+e1.f9      9.000000   -1.000000  103.670341   51.917685   50.079593   51.752656   49.920407    4.492837
+e2.f0p5    0.500000   -2.000000    5.776442    3.851414   66.674505    1.925028   33.325495    0.166627 4.44089E-16
+e2.f1      1.000000   -2.000000   11.550167    7.701922   66.682346    3.848245   33.317654    0.333177
+e2.f3      3.000000   -2.000000   34.617902   23.094901   66.713750   11.523002   33.286250    0.998588
+e2.f5      5.000000   -2.000000   57.642173   38.473391   66.745213   19.168782   33.254787    1.662739
+e2.f7      7.000000   -2.000000   80.622979   53.837393   66.776735   26.785586   33.223265    2.325629
+e2.f9      9.000000   -2.000000  103.560321   69.186907   66.808316   34.373414   33.191684    2.987252
+e4.f0p5    0.500000   -4.000000    5.776170    4.621588   80.011287    1.154582   19.988713    0.099944
+e4.f1      1.000000   -4.000000   11.549080    9.241872   80.022581    2.307208   19.977419    0.199774
+e4.f3      3.000000   -4.000000   34.608123   27.709969   80.067819    6.898154   19.932181    0.597965
+e4.f5      5.000000   -4.000000   57.615008   46.157203   80.113160   11.457805   19.886840    0.994342
+e4.f7      7.000000   -4.000000   80.569735   64.583574   80.158603   15.986161   19.841397    1.388898
+e4.f9      9.000000   -4.000000  103.472305   82.989082   80.204149   20.483223   19.795851    1.781627
+
+
+----    599 PARAMETER min_margin_matrix  minimum operating margin [percent]
+
+              e1          e2          e4
+
+f0            NA          NA          NA
+f0p5   50.004409   66.674505   80.011287
+f1     50.008819   66.682346   80.022581
+f3     50.026475   66.713750   80.067819
+f5     50.044156   66.745213   80.113160
+f7     50.061862   66.776735   80.158603
+f9     50.079593   66.808316   80.204149
+
+
+----    599 PARAMETER max_opex_matrix  maximum tolerable operating cost [million USD]
+
+              e1          e2          e4
+
+f0p5    2.888136    1.925028    1.154582
+f1      5.774744    3.848245    2.307208
+f3     17.305895   11.523002    6.898154
+f5     28.812597   19.168782   11.457805
+f7     40.294851   26.785586   15.986161
+f9     51.752656   34.373414   20.483223
+
+
+----    599 PARAMETER n_market_cases       =    21.000000  
+            PARAMETER n_positive_fee_cases =    18.000000  
+            PARAMETER n_margin_cases       =    54.000000  
+
+----    679 PARAMETER return_value  assumed annual investment return
+
+r4   0.040000,    r6p3 0.063000,    r8   0.080000
+
+
+----    679 PARAMETER horizon_years  investment horizon [years]
+
+y5   5.000000,    y10 10.000000,    y20 20.000000
+
+
+----    679 PARAMETER swf_discount_rate    =     0.080000  assumed annual nominal USD discount rate
+            PARAMETER distribution_share   =     1.000000  assumed share of operating profit invested
+
+----    679 PARAMETER swf_results  27 sovereign wealth scenarios
+
+INDEX 1 = m25
+
+          margin_pct  return_pct       years  annual_co~  cumulativ~  investmen~  future_va~  present_v~
+
+r4  .y5    25.000000    4.000000    5.000000   14.410543   72.052716    5.999434   78.052151   53.120982
+r4  .y10   25.000000    4.000000   10.000000   14.410543  144.105433   28.909094  173.014526   80.139202
+r4  .y20   25.000000    4.000000   20.000000   14.410543  288.210866  140.907425  429.118291   92.066560
+r6p3.y5    25.000000    6.300000    5.000000   14.410543   72.052716    9.668840   81.721557   55.618318
+r6p3.y10   25.000000    6.300000   10.000000   14.410543  144.105433   48.534360  192.639793   89.229498
+r6p3.y20   25.000000    6.300000   20.000000   14.410543  288.210866  259.306576  547.517442  117.468886
+r8  .y5    25.000000    8.000000    5.000000   14.410543   72.052716   12.488191   84.540907   57.537121
+r8  .y10   25.000000    8.000000   10.000000   14.410543  144.105433   64.653803  208.759236   96.695919
+r8  .y20   25.000000    8.000000   20.000000   14.410543  288.210866  371.243902  659.454768  141.484838
+
+INDEX 1 = m50
+
+          margin_pct  return_pct       years  annual_co~  cumulativ~  investmen~  future_va~  present_v~
+
+r4  .y5    50.000000    4.000000    5.000000   28.821087  144.105433   11.998869  156.104301  106.241965
+r4  .y10   50.000000    4.000000   10.000000   28.821087  288.210866   57.818187  346.029053  160.278404
+r4  .y20   50.000000    4.000000   20.000000   28.821087  576.421732  281.814849  858.236581  184.133120
+r6p3.y5    50.000000    6.300000    5.000000   28.821087  144.105433   19.337681  163.443114  111.236637
+r6p3.y10   50.000000    6.300000   10.000000   28.821087  288.210866   97.068720  385.279585  178.458995
+r6p3.y20   50.000000    6.300000   20.000000   28.821087  576.421732  518.613152 1095.034884  234.937771
+r8  .y5    50.000000    8.000000    5.000000   28.821087  144.105433   24.976381  169.081814  115.074242
+r8  .y10   50.000000    8.000000   10.000000   28.821087  288.210866  129.307605  417.518471  193.391837
+r8  .y20   50.000000    8.000000   20.000000   28.821087  576.421732  742.487804 1318.909536  282.969677
+
+INDEX 1 = m75
+
+          margin_pct  return_pct       years  annual_co~  cumulativ~  investmen~  future_va~  present_v~
+
+r4  .y5    75.000000    4.000000    5.000000   43.231630  216.158149   17.998303  234.156452  159.362947
+r4  .y10   75.000000    4.000000   10.000000   43.231630  432.316299   86.727281  519.043579  240.417606
+r4  .y20   75.000000    4.000000   20.000000   43.231630  864.632598  422.722274 1287.354872  276.199680
+r6p3.y5    75.000000    6.300000    5.000000   43.231630  216.158149   29.006521  245.164670  166.854955
+r6p3.y10   75.000000    6.300000   10.000000   43.231630  432.316299  145.603079  577.919378  267.688493
+r6p3.y20   75.000000    6.300000   20.000000   43.231630  864.632598  777.919728 1642.552326  352.406657
+r8  .y5    75.000000    8.000000    5.000000   43.231630  216.158149   37.464572  253.622721  172.611363
+r8  .y10   75.000000    8.000000   10.000000   43.231630  432.316299  193.961408  626.277707  290.087756
+r8  .y20   75.000000    8.000000   20.000000   43.231630  864.632598 1113.731706 1978.364303  424.454515
+
+
+----    679 PARAMETER swf_base_return  future value at 6.3 percent return [million USD]
+
+             y5         y10         y20
+
+m25   81.721557  192.639793  547.517442
+m50  163.443114  385.279585 1095.034884
+m75  245.164670  577.919378 1642.552326
+
+
+----    679 PARAMETER swf_high_margin  future value at 75 percent margin [million USD]
+
+              y5         y10         y20
+
+r4    234.156452  519.043579 1287.354872
+r6p3  245.164670  577.919378 1642.552326
+r8    253.622721  626.277707 1978.364303
+
+
+----    679 PARAMETER swf_high_margin_pv  present value at 75 percent margin [million USD]
+
+              y5         y10         y20
+
+r4    159.362947  240.417606  276.199680
+r6p3  166.854955  267.688493  352.406657
+r8    172.611363  290.087756  424.454515
+
+
+----    679 PARAMETER n_swf_cases          =    27.000000  
+
+
+EXECUTION TIME       =        0.327 SECONDS      4 MB  54.3.1 61154be4 DAX-DAC
+
+
+USER: Course License                                 G260809+0003Ac-GEN
+      Colorado School of Mines                                  DCE5587
+      License for teaching and research at degree granting institutions
+
+
+**** FILE SUMMARY
+
+Input      /Users/alharkan/Documents/GitHub/ebgn645_faizalharkan/Final/Final_v03.gms
+Output     /Users/alharkan/Documents/GitHub/ebgn645_faizalharkan/Final/Final_v03.lst

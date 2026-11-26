@@ -1,0 +1,325 @@
+B 3 C o m p i l a t i o n
+B 694 Include File Summary
+B 706 E x e c u t i o n
+I 708 vbar
+I 709 xbar
+I 710 pbar
+I 711 e_r
+I 712 e_s
+I 714 a
+I 715 b
+I 716 c
+I 717 d
+B 721 Equation Listing    SOLVE direct_selling Using QCP From line 72
+D 724 eq_surplus
+B 730 Column Listing      SOLVE direct_selling Using QCP From line 72
+E 733 X
+E 740 equilibrium_potential
+B 748 Range Statistics    SOLVE direct_selling Using QCP From line 72
+B 759 Model Statistics    SOLVE direct_selling Using QCP From line 72
+B 773 Solution Report     SOLVE direct_selling Using QCP From line 72
+F 819 eq_surplus
+G 823 X
+G 824 equilibrium_potential
+B 836 E x e c u t i o n
+I 838 exports_base
+I 839 price_base
+I 840 exporter_surplus_base
+I 841 consumer_surplus_base
+I 842 total_surplus_base
+B 846 Equation Listing    SOLVE with_dsi_fee Using QCP From line 123
+D 849 eq_fee
+B 855 Column Listing      SOLVE with_dsi_fee Using QCP From line 123
+E 858 X
+E 865 equilibrium_potential
+B 873 Range Statistics    SOLVE with_dsi_fee Using QCP From line 123
+B 884 Model Statistics    SOLVE with_dsi_fee Using QCP From line 123
+B 898 Solution Report     SOLVE with_dsi_fee Using QCP From line 123
+F 945 eq_fee
+G 949 X
+G 950 equilibrium_potential
+B 962 E x e c u t i o n
+I 964 exports_fee
+I 965 price_fee
+I 966 net_price_fee
+I 967 exporter_surplus_fee
+I 968 dsi_revenue_fee
+I 969 check_eq
+I 970 consumer_surplus_fee
+I 971 total_surplus_fee
+I 972 change_cs
+I 973 change_ps
+I 974 change_ts
+I 975 deadweight_loss
+I 976 buyer_incidence
+I 977 exporter_incidence
+I 978 main_results
+I 987 exports_analytical
+I 988 dwl_analytical
+I 989 check_base_quantity
+I 990 check_base_price
+I 991 check_base_eq
+I 992 check_quantity
+I 993 check_eq
+I 994 check_welfare
+I 995 check_dwl
+I 996 check_incidence
+B 1000 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 1003 eq_fee
+B 1009 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 1012 X
+E 1019 equilibrium_potential
+B 1027 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 1038 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 1059 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 1105 eq_fee
+G 1109 X
+G 1110 equilibrium_potential
+B 1122 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 1125 eq_fee
+B 1131 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 1134 X
+E 1141 equilibrium_potential
+B 1149 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 1160 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 1181 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 1228 eq_fee
+G 1232 X
+G 1233 equilibrium_potential
+B 1245 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 1248 eq_fee
+B 1254 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 1257 X
+E 1264 equilibrium_potential
+B 1272 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 1283 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 1304 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 1351 eq_fee
+G 1355 X
+G 1356 equilibrium_potential
+B 1368 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 1371 eq_fee
+B 1377 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 1380 X
+E 1387 equilibrium_potential
+B 1395 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 1406 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 1427 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 1474 eq_fee
+G 1478 X
+G 1479 equilibrium_potential
+B 1491 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 1494 eq_fee
+B 1500 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 1503 X
+E 1510 equilibrium_potential
+B 1518 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 1529 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 1550 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 1597 eq_fee
+G 1601 X
+G 1602 equilibrium_potential
+B 1614 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 1617 eq_fee
+B 1623 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 1626 X
+E 1633 equilibrium_potential
+B 1641 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 1652 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 1673 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 1720 eq_fee
+G 1724 X
+G 1725 equilibrium_potential
+B 1737 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 1740 eq_fee
+B 1746 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 1749 X
+E 1756 equilibrium_potential
+B 1764 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 1775 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 1796 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 1843 eq_fee
+G 1847 X
+G 1848 equilibrium_potential
+B 1860 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 1863 eq_fee
+B 1869 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 1872 X
+E 1879 equilibrium_potential
+B 1887 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 1898 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 1919 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 1965 eq_fee
+G 1969 X
+G 1970 equilibrium_potential
+B 1982 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 1985 eq_fee
+B 1991 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 1994 X
+E 2001 equilibrium_potential
+B 2009 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 2020 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 2041 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 2088 eq_fee
+G 2092 X
+G 2093 equilibrium_potential
+B 2105 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 2108 eq_fee
+B 2114 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 2117 X
+E 2124 equilibrium_potential
+B 2132 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 2143 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 2164 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 2211 eq_fee
+G 2215 X
+G 2216 equilibrium_potential
+B 2228 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 2231 eq_fee
+B 2237 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 2240 X
+E 2247 equilibrium_potential
+B 2255 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 2266 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 2287 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 2334 eq_fee
+G 2338 X
+G 2339 equilibrium_potential
+B 2351 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 2354 eq_fee
+B 2360 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 2363 X
+E 2370 equilibrium_potential
+B 2378 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 2389 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 2410 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 2457 eq_fee
+G 2461 X
+G 2462 equilibrium_potential
+B 2474 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 2477 eq_fee
+B 2483 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 2486 X
+E 2493 equilibrium_potential
+B 2501 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 2512 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 2533 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 2580 eq_fee
+G 2584 X
+G 2585 equilibrium_potential
+B 2597 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 2600 eq_fee
+B 2606 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 2609 X
+E 2616 equilibrium_potential
+B 2624 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 2635 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 2656 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 2703 eq_fee
+G 2707 X
+G 2708 equilibrium_potential
+B 2720 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 2723 eq_fee
+B 2729 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 2732 X
+E 2739 equilibrium_potential
+B 2747 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 2758 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 2779 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 2825 eq_fee
+G 2829 X
+G 2830 equilibrium_potential
+B 2842 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 2845 eq_fee
+B 2851 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 2854 X
+E 2861 equilibrium_potential
+B 2869 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 2880 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 2901 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 2948 eq_fee
+G 2952 X
+G 2953 equilibrium_potential
+B 2965 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 2968 eq_fee
+B 2974 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 2977 X
+E 2984 equilibrium_potential
+B 2992 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 3003 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 3024 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 3071 eq_fee
+G 3075 X
+G 3076 equilibrium_potential
+B 3088 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 3091 eq_fee
+B 3097 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 3100 X
+E 3107 equilibrium_potential
+B 3115 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 3126 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 3147 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 3194 eq_fee
+G 3198 X
+G 3199 equilibrium_potential
+B 3211 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 3214 eq_fee
+B 3220 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 3223 X
+E 3230 equilibrium_potential
+B 3238 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 3249 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 3270 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 3317 eq_fee
+G 3321 X
+G 3322 equilibrium_potential
+B 3334 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 3337 eq_fee
+B 3343 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 3346 X
+E 3353 equilibrium_potential
+B 3361 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 3372 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 3393 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 3440 eq_fee
+G 3444 X
+G 3445 equilibrium_potential
+B 3457 Equation Listing    SOLVE with_dsi_fee Using QCP From line 318
+D 3460 eq_fee
+B 3466 Column Listing      SOLVE with_dsi_fee Using QCP From line 318
+E 3469 X
+E 3476 equilibrium_potential
+B 3484 Range Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 3495 Model Statistics    SOLVE with_dsi_fee Using QCP From line 318
+B 3516 Solution Report     SOLVE with_dsi_fee Using QCP From line 318
+F 3563 eq_fee
+G 3567 X
+G 3568 equilibrium_potential
+B 3580 E x e c u t i o n
+I 3580 elastic_baseline
+I 3590 scenario_results
+I 3617 scenario_checks
+I 3644 fee_results
+I 3657 elastic_results
+I 3666 export_change_matrix
+I 3679 ps_loss_matrix
+I 3692 dwl_matrix
+I 3705 margin_results
+I 3714 margin_matrix
+I 3786 domestic_matrix
+I 3810 break_even_main
+I 3819 break_even_results
+I 3843 min_margin_matrix
+I 3856 max_opex_matrix
+I 3869 n_market_cases
+I 3870 n_positive_fee_cases
+I 3871 n_margin_cases
+I 3872 return_value
+I 3877 horizon_years
+I 3883 swf_discount_rate
+I 3884 distribution_share
+I 3885 swf_results
+I 3930 swf_base_return
+I 3939 swf_high_margin
+I 3948 swf_high_margin_pv
+I 3958 n_swf_cases
